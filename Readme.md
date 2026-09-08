@@ -122,34 +122,6 @@ Luminosidade: 315
 
 ---
 
-# 🔊 Buzzer
-
-Cada chaveiro possuirá um **buzzer**, permitindo a emissão de alertas sonoros diretamente no dispositivo.
-
-O buzzer poderá ser utilizado, por exemplo, para facilitar a localização física de determinado chaveiro ou indicar algum evento definido pelo sistema.
-
-A arquitetura deverá permitir que um comando seja enviado ao chaveiro para solicitar o acionamento do buzzer.
-
-Fluxo esperado:
-
-```text
-Interface
-    │
-    ▼
-Raspberry Pi
-    │
-    ▼
-Rede
-    │
-    ▼
-Chaveiro
-    │
-    ▼
-  Buzzer
-```
-
----
-
 # 🔈 Alto-falante da Raspberry Pi
 
 Além dos alertas individuais dos chaveiros, a **Raspberry Pi será conectada a um alto-falante**.
