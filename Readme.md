@@ -72,7 +72,6 @@ O chaveiro deverá possuir:
 - identificador único;
 - sensor de temperatura;
 - sensor de luminosidade;
-- buzzer;
 - sistema de alimentação;
 - encapsulamento compacto.
 
@@ -128,18 +127,6 @@ Além dos alertas individuais dos chaveiros, a **Raspberry Pi será conectada a 
 
 Esse componente permitirá que a unidade central do AquiIoT reproduza alertas ou avisos sonoros.
 
-Dessa maneira, o sistema possuirá dois mecanismos diferentes de atuação sonora:
-
-### Alerta individual
-
-```text
-Chaveiro
-   │
-   ▼
- Buzzer
-```
-
-Utilizado para alertar ou localizar um dispositivo específico.
 
 ### Alerta central
 
@@ -193,7 +180,6 @@ A arquitetura inicial do AquiIoT pode ser representada da seguinte maneira:
 │       │                  │
 │       ├── Temperatura    │
 │       ├── Luminosidade   │
-│       └── Buzzer         │
 └────────────┬─────────────┘
              │
              │ Comunicação sem fio
@@ -257,7 +243,7 @@ Rede
    ↓
 Dispositivo
    ↓
-Buzzer / atuação
+Atuação
 ```
 
 ---
@@ -313,7 +299,6 @@ A lista inicial de componentes previstos para o protótipo inclui:
 | Raspberry Pi | Unidade central do sistema |
 | Sensor de temperatura | Monitoramento da temperatura ambiente |
 | Sensor de luminosidade | Monitoramento da luminosidade |
-| Buzzer | Alerta sonoro individual |
 | Alto-falante | Alertas sonoros da unidade central |
 | Fonte/bateria | Alimentação dos dispositivos |
 
