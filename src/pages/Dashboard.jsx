@@ -1,6 +1,6 @@
 import SummaryCard from '../components/SummaryCard.jsx'
 import Header from '../components/Header.jsx'
-import dispositivos from '../data/mockData.js'
+import { dispositivos, setores, eventos } from "../data/mockData.js"
 import DeviceCard from '../components/DeviceCard.jsx'
 import './Dashboard.css'
 

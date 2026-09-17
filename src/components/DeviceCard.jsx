@@ -1,12 +1,29 @@
 function DeviceCard(props) {
-    return (
-        <div className='device-card'>
-            <h3>{props.dispositivo.id}</h3>
+  const estaOnline = props.dispositivo.status === "online"
 
-            <p>Setor: {props.dispositivo.setor}</p>
-            <p>Status: {props.dispositivo.status}</p>
-            <p>RSSI: {props.dispositivo.rssi} dBm</p>
-        </div>
-    )
+  return (
+    <div className={`device-card ${estaOnline ? "online" : "offline"}`}>
+      <h3>{props.dispositivo.id}</h3>
 
-} export default DeviceCard
+      <p>Setor: {props.dispositivo.setor}</p>
+
+      <p>
+        Status: {estaOnline ? "Online" : "Offline"}
+      </p>
+
+      <p>
+        RSSI: {
+          props.dispositivo.rssi !== null
+            ? `${props.dispositivo.rssi} dBm`
+            : "Indisponível"
+        }
+      </p>
+
+      <p className="ultima-atualizacao">
+        Última atualização: {props.dispositivo.ultimaAtualizacao}
+      </p>
+    </div>
+  )
+}
+
+export default DeviceCard
