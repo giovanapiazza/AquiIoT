@@ -1,6 +1,6 @@
 function DeviceCard(props) {
     return (
-        <div>
+        <div className='device-card'>
             <h3>{props.dispositivo.id}</h3>
 
             <p>Setor: {props.dispositivo.setor}</p>

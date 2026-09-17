@@ -2,6 +2,7 @@ import SummaryCard from '../components/SummaryCard.jsx'
 import Header from '../components/Header.jsx'
 import dispositivos from '../data/mockData.js'
 import DeviceCard from '../components/DeviceCard.jsx'
+import './Dashboard.css'
 
 function Dashboard() {
 
@@ -15,16 +16,16 @@ function Dashboard() {
   const setoresUnicos = new Set(setores);
 
   return (
-    <div>
+    <div className='dashboard'>
       <Header />
 
-      <div>
+      <div className='resumo'>
         <SummaryCard titulo="Dispositivos" valor={dispositivos.length} />
         <SummaryCard titulo="Setores" valor={setoresUnicos.size} />
         <SummaryCard titulo="Online" valor={dispositivosOnline.length} />
       </div>
 
-      <div>
+      <div className='dispositivos'>
         {dispositivos.map((dispositivo) => (
           <DeviceCard key={dispositivo.id} dispositivo={dispositivo} />
         ))}
