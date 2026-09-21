@@ -2,13 +2,12 @@ const express = require("express")
 const cors = require("cors")
 
 const app = express()
-
 const PORT = 3000
 
 app.use(cors())
 app.use(express.json())
 
-const dispositivos = [
+let dispositivos = [
   {
     id: "CHAVEIRO-001",
     setor: "Sala 01",
@@ -45,7 +44,7 @@ const setores = [
   }
 ]
 
-const eventos = [
+let eventos = [
   {
     id: 1,
     dispositivo: "CHAVEIRO-001",
@@ -82,6 +81,59 @@ app.get("/api/setores", (req, res) => {
 
 app.get("/api/eventos", (req, res) => {
   res.json(eventos)
+})
+
+app.post("/api/localizacao", (req, res) => {
+  const { dispositivo, setor, rssi } = req.body
+
+  if (!dispositivo || !setor) {
+    return res.status(400).json({
+      erro: "Dispositivo e setor são obrigatórios"
+    })
+  }
+
+  const horario = new Date().toLocaleTimeString("pt-BR", {
+    hour12: false
+  })
+
+  const dispositivoEncontrado = dispositivos.find(
+    item => item.id === dispositivo
+  )
+
+  if (dispositivoEncontrado) {
+    dispositivoEncontrado.setor = setor
+    dispositivoEncontrado.status = "online"
+    dispositivoEncontrado.rssi = rssi
+    dispositivoEncontrado.ultimaAtualizacao = horario
+  } else {
+    dispositivos.push({
+      id: dispositivo,
+      setor: setor,
+      status: "online",
+      rssi: rssi,
+      ultimaAtualizacao: horario
+    })
+  }
+
+  const novoEvento = {
+    id: Date.now(),
+    dispositivo: dispositivo,
+    setor: setor,
+    horario: horario
+  }
+
+  eventos.unshift(novoEvento)
+
+  console.log(
+    `${dispositivo} detectado em ${setor} | RSSI: ${rssi}`
+  )
+
+  res.status(201).json({
+    mensagem: "Localização registrada com sucesso",
+    dispositivo: dispositivo,
+    setor: setor,
+    rssi: rssi
+  })
 })
 
 app.listen(PORT, () => {
