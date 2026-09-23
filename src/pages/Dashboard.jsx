@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react"
 
-import SummaryCard from "../components/SummaryCard.jsx"
-import Header from "../components/Header.jsx"
-import DeviceCard from "../components/DeviceCard.jsx"
-import SectorCard from "../components/SectorCard.jsx"
-import EventList from "../components/EventList.jsx"
+import Sidebar from "../components/Sidebar.jsx"
+import Topbar from "../components/Topbar.jsx"
+import SummaryStats from "../components/SummaryStats.jsx"
+import SectorGrid from "../components/SectorGrid.jsx"
+import DeviceStatus from "../components/DeviceStatus.jsx"
+import RecentMovement from "../components/RecentMovement.jsx"
+import MovementHistory from "../components/MovementHistory.jsx"
 
 import "./Dashboard.css"
 
@@ -16,41 +18,49 @@ function Dashboard() {
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState(null)
 
+  const [busca, setBusca] = useState("")
+  const [menuAberto, setMenuAberto] = useState(false)
+  const [menuAtivo, setMenuAtivo] = useState("visao-geral")
+
   useEffect(() => {
     async function carregarDados() {
       try {
-        const respostaDispositivos = await fetch(
-          "http://localhost:3000/api/dispositivos"
-        )
-
-        const respostaSetores = await fetch(
-          "http://localhost:3000/api/setores"
-        )
-
-        const respostaEventos = await fetch(
-          "http://localhost:3000/api/eventos"
-        )
+        const [
+          respostaDispositivos,
+          respostaSetores,
+          respostaEventos
+        ] = await Promise.all([
+          fetch("http://localhost:3000/api/dispositivos"),
+          fetch("http://localhost:3000/api/setores"),
+          fetch("http://localhost:3000/api/eventos")
+        ])
 
         if (
           !respostaDispositivos.ok ||
           !respostaSetores.ok ||
           !respostaEventos.ok
         ) {
-          throw new Error("Erro ao buscar dados da API")
+          throw new Error("Erro ao carregar dados")
         }
 
-        const dadosDispositivos = await respostaDispositivos.json()
-        const dadosSetores = await respostaSetores.json()
-        const dadosEventos = await respostaEventos.json()
+        const dadosDispositivos =
+          await respostaDispositivos.json()
+
+        const dadosSetores =
+          await respostaSetores.json()
+
+        const dadosEventos =
+          await respostaEventos.json()
 
         setDispositivos(dadosDispositivos)
         setSetores(dadosSetores)
         setEventos(dadosEventos)
+
       } catch (erro) {
         console.error(erro)
 
         setErro(
-          "Não foi possível conectar com o servidor AquiIoT."
+          "Não foi possível conectar ao servidor."
         )
       } finally {
         setCarregando(false)
@@ -60,87 +70,99 @@ function Dashboard() {
     carregarDados()
   }, [])
 
-  const dispositivosOnline = dispositivos.filter(
-    dispositivo => dispositivo.status === "online"
-  )
+  const dispositivosOnline =
+    dispositivos.filter(
+      dispositivo =>
+        dispositivo.status === "online"
+    )
+
+  const dispositivosFiltrados =
+    dispositivos.filter(dispositivo => {
+      const termo = busca.toLowerCase()
+
+      return (
+        dispositivo.id
+          .toLowerCase()
+          .includes(termo) ||
+        dispositivo.setor
+          .toLowerCase()
+          .includes(termo)
+      )
+    })
 
   if (carregando) {
     return (
-      <div className="dashboard">
-        <h2>Carregando dados...</h2>
+      <div className="full-message">
+        Carregando sistema...
       </div>
     )
   }
 
   if (erro) {
     return (
-      <div className="dashboard">
-        <h2>Erro</h2>
-        <p>{erro}</p>
+      <div className="full-message error">
+        <strong>Servidor indisponível</strong>
+        <span>{erro}</span>
       </div>
     )
   }
 
   return (
-    <div className="dashboard">
+    <div className="app-layout">
 
-      <Header />
+      <Sidebar
+        ativo={menuAtivo}
+        onNavigate={setMenuAtivo}
+        aberto={menuAberto}
+        onClose={() => setMenuAberto(false)}
+      />
 
-      <h2>Resumo</h2>
+      <div className="main-area">
 
-      <div className="resumo">
-
-        <SummaryCard
-          titulo="Dispositivos"
-          valor={dispositivos.length}
+        <Topbar
+          busca={busca}
+          setBusca={setBusca}
+          onMenuClick={() =>
+            setMenuAberto(true)
+          }
         />
 
-        <SummaryCard
-          titulo="Setores"
-          valor={setores.length}
-        />
+        <main
+          className="dashboard-content"
+          id="visao-geral"
+        >
 
-        <SummaryCard
-          titulo="Online"
-          valor={dispositivosOnline.length}
-        />
+          <SummaryStats
+            dispositivos={dispositivos.length}
+            setores={setores.length}
+            online={dispositivosOnline.length}
+          />
 
-      </div>
+          <div className="dashboard-grid">
 
-      <h2>Dispositivos</h2>
-
-      <div className="dispositivos">
-
-        {dispositivos.map(
-          dispositivo => (
-            <DeviceCard
-              key={dispositivo.id}
-              dispositivo={dispositivo}
+            <SectorGrid
+              setores={setores}
+              dispositivos={dispositivosFiltrados}
             />
-          )
-        )}
 
-      </div>
-
-      <h2>Setores</h2>
-
-      <div className="setores">
-
-        {setores.map(
-          setor => (
-            <SectorCard
-              key={setor.id}
-              setor={setor}
+            <DeviceStatus
               dispositivos={dispositivos}
+              buscaGeral={busca}
             />
-          )
-        )}
+
+          </div>
+
+          <RecentMovement
+            evento={eventos[0]}
+          />
+
+          <MovementHistory
+            eventos={eventos}
+          />
+
+        </main>
 
       </div>
-
-      <h2>Histórico de localização</h2>
-
-      <EventList eventos={eventos} />
 
     </div>
   )

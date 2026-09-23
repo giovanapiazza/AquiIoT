@@ -1,9 +1,7 @@
-import Dashboard from './pages/Dashboard.jsx'
+import Dashboard from "./pages/Dashboard.jsx"
 
 function App() {
-  return (
-    <Dashboard />
-  )
+  return <Dashboard />
 }
 
 export default App

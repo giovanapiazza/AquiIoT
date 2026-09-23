@@ -1,8 +1,15 @@
 function Header() {
   return (
-    <header>
-      <h1>AquiIoT</h1>
-      <h2>Sistema de localização IoT</h2>
+    <header className="main-header">
+      <div>
+        <h1>AquiIoT</h1>
+        <p>Sistema de localização por setores</p>
+      </div>
+
+      <div className="system-status">
+        <span></span>
+        Online
+      </div>
     </header>
   )
 }
