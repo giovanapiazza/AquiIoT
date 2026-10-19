@@ -1,63 +1,53 @@
-import {
-  LayoutDashboard,
-  Radio,
-  Map,
-  History,
-  Settings
-} from "lucide-react"
+import { useEffect } from 'react'
+import { LayoutDashboard, Radio, Map, History, Settings } from 'lucide-react'
 
 function Sidebar({ ativo, onNavigate, aberto, onClose }) {
+  useEffect(() => {
+    if (!aberto) return
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [aberto, onClose])
   const itens = [
     {
-      id: "visao-geral",
-      nome: "Visão geral",
-      icone: LayoutDashboard
+      id: 'visao-geral',
+      nome: 'Visão geral',
+      icone: LayoutDashboard,
     },
     {
-      id: "dispositivos",
-      nome: "Dispositivos",
-      icone: Radio
+      id: 'dispositivos',
+      nome: 'Dispositivos',
+      icone: Radio,
     },
     {
-      id: "setores",
-      nome: "Setores",
-      icone: Map
+      id: 'setores',
+      nome: 'Setores',
+      icone: Map,
     },
     {
-      id: "historico",
-      nome: "Histórico",
-      icone: History
+      id: 'historico',
+      nome: 'Histórico',
+      icone: History,
     },
     {
-      id: "configuracoes",
-      nome: "Configurações",
-      icone: Settings
-    }
+      id: 'configuracoes',
+      nome: 'Configurações',
+      icone: Settings,
+    },
   ]
 
   function navegar(id) {
     onNavigate(id)
     onClose()
-
-    const elemento = document.getElementById(id)
-
-    if (elemento) {
-      elemento.scrollIntoView({
-        behavior: "smooth"
-      })
-    }
   }
 
   return (
     <>
-      {aberto && (
-        <div
-          className="sidebar-overlay"
-          onClick={onClose}
-        />
-      )}
+      {aberto && <div className="sidebar-overlay" onClick={onClose} />}
 
-      <aside className={`sidebar ${aberto ? "open" : ""}`}>
+      <aside className={`sidebar ${aberto ? 'open' : ''}`}>
         <div className="sidebar-brand">
           <div className="logo-mark">A</div>
 
@@ -68,20 +58,17 @@ function Sidebar({ ativo, onNavigate, aberto, onClose }) {
         </div>
 
         <nav className="sidebar-nav">
-          {itens.map(item => {
+          {itens.map((item) => {
             const Icone = item.icone
 
             return (
               <button
                 key={item.id}
-                className={ativo === item.id ? "active" : ""}
+                aria-current={ativo === item.id ? 'page' : undefined}
+                className={ativo === item.id ? 'active' : ''}
                 onClick={() => navegar(item.id)}
               >
-                <Icone
-                  className="nav-icon"
-                  size={16}
-                  strokeWidth={1.7}
-                />
+                <Icone className="nav-icon" size={16} strokeWidth={1.7} />
 
                 {item.nome}
               </button>

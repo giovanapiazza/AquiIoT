@@ -1,16 +1,13 @@
-function MovementHistory({ eventos }) {
+function MovementHistory({ eventos, onViewAll }) {
   return (
-    <section
-      className="history-section"
-      id="historico"
-    >
+    <section className="history-section" id="historico">
       <div className="section-title history-title">
         <div>
           <h2>Últimas movimentações</h2>
           <p>Registros recentes dos dispositivos</p>
         </div>
 
-        <button type="button">
+        <button type="button" onClick={onViewAll}>
           Ver histórico completo
         </button>
       </div>
@@ -30,30 +27,17 @@ function MovementHistory({ eventos }) {
               Nenhuma movimentação registrada.
             </div>
           ) : (
-            eventos.map(evento => (
-              <div
-                className="history-row"
-                key={evento.id}
-              >
+            eventos.map((evento) => (
+              <div className="history-row" key={evento.id}>
                 <time>{evento.horario}</time>
 
-                <strong>
-                  {evento.dispositivo}
-                </strong>
+                <strong>{evento.dispositivo}</strong>
 
-                <span>
-                  {evento.origem || "—"}
-                </span>
+                <span>{evento.origem || '—'}</span>
 
-                <span>
-                  {evento.setor}
-                </span>
+                <span>{evento.setor}</span>
 
-                <span>
-                  {evento.rssi
-                    ? `${evento.rssi} dBm`
-                    : "—"}
-                </span>
+                <span>{evento.rssi != null ? `${evento.rssi} dBm` : '—'}</span>
               </div>
             ))
           )}
