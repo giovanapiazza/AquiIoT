@@ -1,124 +1,168 @@
 #include <WiFi.h>
 #include <WebServer.h>
+#include <DHT.h>
 #include <esp_arduino_version.h>
-#include "segredos.h"
 
-
-// REDE DO SETOR (troque a senha antes de usar em publico)
+const char* ID_SETOR = "SETOR_01";
+const char* NOME_SETOR = "Setor 01";
+const char* ESP_ID = "ESP32-01";
 const char* NOME_REDE = "AquiIoT_Setor_01";
-// SENHA_REDE definida em segredos.h
+const char* SENHA_REDE = "12345678"; // minimo 8 caracteres
+const char* CHAVE_BUZZER = "MUDE_ESTA_CHAVE_PRIVADA_DO_BUZZER";
+const char* CHAVE_DISPOSITIVO = "MUDE_ESTA_CHAVE_DOS_CHAVEIROS";
+const uint8_t CANAL_WIFI = 6;
 
-// CONTROLE DO BUZZER
-// CHAVE_BUZZER definida em segredos.h
-
-const int PINO_LDR       = 35;  // meio do divisor LDR/resistor (0 a 3,3 V)
-const int PINO_MICROFONE = 34;  // pino AO do modulo (0 a 3,3 V)
-const int PINO_TEMP      = 32;  // saida Vout do TMP36 (0 a 3,3 V)
-const int PINO_BUZZER    = 25;  // acao de baixa corrente com 960 ohms em serie
-
-const bool TEM_TMP36 = false;
-
+const int PINO_LDR = 34;        // ADC1 / divisor de tensao
+const int PINO_MICROFONE = 35;  // ADC1 / AO do modulo de microfone
+const int PINO_DHT = 32;        // Dados digitais DHT11
+const int PINO_BUZZER = 25;
+const bool HABILITAR_BUZZER = false;
 const bool BUZZER_PASSIVO = true;
-const unsigned long DURACAO_BIP_MS = 250;
+const unsigned long TEMPO_BIP_MS = 250;
+
+const unsigned long INTERVALO_SENSORES_MS = 5000;
+const unsigned long JANELA_MIC_MS = 25;
+const unsigned long INTERVALO_VERIFICAR_AP_MS = 10000;
+const unsigned long PRESENCA_EXPIRA_MS = 15000;
+const int MAX_CHAVEIROS = 8;
 
 WebServer servidor(80);
-bool buzzerConfigurado = false;
-bool bipEmAndamento = false;
-unsigned long inicioBip = 0;
-unsigned long ultimoLog = 0;
+DHT dht(PINO_DHT, DHT11);
 
-const char PAGINA_HTML[] = R"HTML(
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>AquiIoT - Setor 01</title>
-  <style>
-    body { font-family: Arial,sans-serif; background:#f1f5f7; color:#213544;
-           max-width:620px; margin:24px auto; padding:0 15px; }
-    .card { background:white; padding:16px; margin:12px 0; border-radius:12px;
-            box-shadow:0 1px 5px #d9e2e6; }
-    .valor { font-size:25px; font-weight:bold; margin:10px 0; }
-    button { background:#176a75; color:white; border:0; border-radius:8px;
-             padding:12px 18px; cursor:pointer; }
-    input { width:100%; box-sizing:border-box; padding:10px; margin:8px 0;
-            border:1px solid #a7bbc5; border-radius:7px; }
-    small { color:#5d727e; }
-  </style>
-</head>
-<body>
-  <h1>AquiIoT - Setor 01</h1>
-  <small>Leituras atualizadas a cada 2 segundos (nao sao medicoes calibradas).</small>
-  <div class="card">
-    <b>Luminosidade (LDR)</b><div class="valor" id="luz">--</div>
-    <small>ADC bruto de 0 a 4095; nao representa lux.</small>
-  </div>
-  <div class="card">
-    <b>Microfone (AO)</b><div class="valor" id="som">--</div>
-    <small>ADC bruto de 0 a 4095; nao representa dB.</small>
-    <p>Variacao em 25 ms: <b id="amplitude">--</b></p>
-  </div>
-  <div class="card">
-    <b>Temperatura (TMP36)</b><div class="valor" id="temperatura">--</div>
-    <small id="info-temp">O sensor precisa estar fisicamente conectado.</small>
-  </div>
-  <div class="card">
-    <b>Dispositivos conectados</b><div class="valor" id="clientes">--</div>
-  </div>
-  <div class="card">
-    <b>Alerta sonoro - comando protegido</b>
-    <p><small>Insira a chave de controle configurada no firmware. Ela nao fica salva neste site.</small></p>
-    <input id="chave" type="password" autocomplete="off" placeholder="Chave de controle do buzzer">
-    <button type="button" onclick="apitar()">Emitir bip (250 ms)</button>
-    <p id="estado" role="status">Aguardando comando.</p>
-  </div>
-  <p><a href="/dados">Ver dados em JSON</a></p>
-  <script>
-    async function atualizar() {
-      try {
-        const r = await fetch('/dados', {cache:'no-store'});
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        const d = await r.json();
-        document.getElementById('luz').textContent = d.luminosidade_adc;
-        document.getElementById('som').textContent = d.som_adc;
-        document.getElementById('amplitude').textContent = d.som_variacao;
-        document.getElementById('clientes').textContent = d.clientes;
-        document.getElementById('temperatura').textContent =
-          d.temperatura_disponivel ? d.temperatura_c.toFixed(1) + ' °C' : 'Nao disponivel';
-        document.getElementById('info-temp').textContent =
-          d.temperatura_disponivel ? 'Leitura aproximada do TMP36.' :
-          'Conecte o TMP36 e ative TEM_TMP36 no codigo.';
-      } catch(e) {
-        document.getElementById('estado').textContent = 'Sem resposta do ESP32: ' + e.message;
-      }
+int ldrAdc = 0;
+int microfoneAdc = 0;
+int variacaoMicrofone = 0;
+bool microfoneSaturado = false;  
+float temperatura = NAN;
+float umidade = NAN;
+bool dhtValido = false;
+unsigned long falhasDht = 0;
+unsigned long ultimaLeituraMs = 0;
+unsigned long ultimaTentativaAPMs = 0;
+bool leiturasDisponiveis = false;
+bool apIniciado = false;
+
+bool buzzerPronto = false;
+bool bipAtivo = false;
+unsigned long inicioBipMs = 0;
+
+struct Chaveiro {
+  String id;
+  int rssi = 0;                // informado pelo chaveiro
+  unsigned long vistoMs = 0;
+  bool utilizado = false;
+};
+Chaveiro chaveiros[MAX_CHAVEIROS];
+
+bool chaveiroPresente(const Chaveiro& c);
+int contarChaveiros();
+void enviarDadosSerial();
+
+int medirVariacaoSom() {
+  int minimo = 4095;
+  int maximo = 0;
+  const unsigned long inicio = millis();
+  while (millis() - inicio < JANELA_MIC_MS) {
+    int v = analogRead(PINO_MICROFONE);
+    if (v < minimo) minimo = v;
+    if (v > maximo) maximo = v;
+    delayMicroseconds(120);
+  }
+  return maximo - minimo;
+}
+
+void lerSensores() {
+  ldrAdc = analogRead(PINO_LDR);
+  microfoneAdc = analogRead(PINO_MICROFONE);
+  variacaoMicrofone = medirVariacaoSom();
+  microfoneSaturado = microfoneAdc == 0 || microfoneAdc == 4095;
+
+  const float t = dht.readTemperature();
+  const float u = dht.readHumidity();
+  dhtValido = !isnan(t) && !isnan(u);
+  if (dhtValido) {
+    temperatura = t;
+    umidade = u;
+  } else {
+    temperatura = NAN;
+    umidade = NAN;
+    falhasDht++;
+  }
+
+  ultimaLeituraMs = millis();
+  leiturasDisponiveis = true;
+
+  Serial.printf("[SENSORES] LDR: %d | MIC: %d | Variacao: %d",
+                ldrAdc, microfoneAdc, variacaoMicrofone);
+  if (microfoneSaturado) Serial.print(" [VERIFICAR MICROFONE]");
+  if (dhtValido) {
+    Serial.printf(" | DHT11: %.1f C / %.1f %%", temperatura, umidade);
+  } else {
+    Serial.print(" | DHT11: sem leitura");
+  }
+  Serial.printf(" | Clientes Wi-Fi: %u", WiFi.softAPgetStationNum());
+  Serial.printf(" | Chaveiros presentes: %d", contarChaveiros());
+  Serial.println(" (zero e normal)");
+}
+
+
+bool idValido(const String& id) {
+  if (id.length() != 8) return false;
+  for (unsigned int i = 0; i < id.length(); i++) {
+    if (id[i] < '0' || id[i] > '9') return false;
+  }
+  return true;
+}
+
+bool chaveiroPresente(const Chaveiro& c) {
+  return c.utilizado && (millis() - c.vistoMs < PRESENCA_EXPIRA_MS);
+}
+
+int contarChaveiros() {
+  int quantidade = 0;
+  for (const Chaveiro& c : chaveiros) if (chaveiroPresente(c)) quantidade++;
+  return quantidade;
+}
+
+void registrarPresenca() {
+  if (servidor.header("X-Device-Key") != CHAVE_DISPOSITIVO) {
+    servidor.send(401, "text/plain", "Chave do dispositivo incorreta.");
+    return;
+  }
+  const String id = servidor.arg("id");
+  const String rssiStr = servidor.arg("rssi");
+  const int rssi = rssiStr.toInt();
+  if (!idValido(id) || rssiStr.length() == 0 ||
+      rssi < -120 || rssi > -1) {
+    servidor.send(400, "text/plain", "Informe id com 8 digitos e RSSI valido (-120 a -1).");
+    return;
+  }
+
+  Chaveiro* destino = nullptr;
+  for (Chaveiro& c : chaveiros) {
+    if (c.utilizado && c.id == id) { destino = &c; break; }
+  }
+  if (destino == nullptr) {
+    for (Chaveiro& c : chaveiros) {
+      if (!chaveiroPresente(c)) { destino = &c; break; }
     }
-    async function apitar() {
-      const chave = document.getElementById('chave').value;
-      const status = document.getElementById('estado');
-      if (!chave) { status.textContent = 'Informe a chave antes de enviar o comando.'; return; }
-      try {
-        const r = await fetch('/apitar', {
-          method: 'POST',
-          headers: {'X-API-Key': chave},
-          cache: 'no-store'
-        });
-        const mensagem = await r.text();
-        status.textContent = r.ok ? mensagem : ('Erro ' + r.status + ': ' + mensagem);
-      } catch(e) {
-        status.textContent = 'Erro de conexao: ' + e.message;
-      }
-    }
-    atualizar();
-    setInterval(atualizar, 2000);
-  </script>
-</body>
-</html>
-)HTML";
+  }
+  if (destino == nullptr) {
+    servidor.send(503, "text/plain", "Limite temporario de chaveiros atingido.");
+    return;
+  }
+  const bool novo = !destino->utilizado || destino->id != id || !chaveiroPresente(*destino);
+  destino->utilizado = true;
+  destino->id = id;
+  destino->rssi = rssi;
+  destino->vistoMs = millis();
+  if (novo) Serial.printf("[PRESENCA] Chaveiro %s, RSSI informado %d dBm\n", id.c_str(), rssi);
+  servidor.send(200, "text/plain", "Presenca atualizada.");
+}
 
 void buzzerSaida(bool ligar) {
+  if (!buzzerPronto) return;
   if (BUZZER_PASSIVO) {
-    if (!buzzerConfigurado) return;
 #if ESP_ARDUINO_VERSION_MAJOR >= 3
     ledcWriteTone(PINO_BUZZER, ligar ? 2000 : 0);
 #else
@@ -129,159 +173,198 @@ void buzzerSaida(bool ligar) {
   }
 }
 
-// Variação pico-a-pico, nao e decibeis.
-int medirVariacaoSom() {
-  int minimo = 4095;
-  int maximo = 0;
-  unsigned long inicio = millis();
-  while (millis() - inicio < 25) {
-    int leitura = analogRead(PINO_MICROFONE);
-    if (leitura < minimo) minimo = leitura;
-    if (leitura > maximo) maximo = leitura;
-    delayMicroseconds(120);
-  }
-  return maximo - minimo;
+void iniciarBip() {
+  buzzerSaida(true);
+  bipAtivo = true;
+  inicioBipMs = millis();
 }
 
-// TMP36: Vout = 500 mV + (10 mV por grau Celsius).
-// Entrega false e temperatura indisponivel quando o sensor esta desativado.
-bool lerTemperaturaTMP36(float& temperaturaC, uint32_t& tensaoMv) {
-  if (!TEM_TMP36) return false;
-
-  const int AMOSTRAS = 12;
-  uint32_t soma = 0;
-  for (int i = 0; i < AMOSTRAS; i++) {
-    soma += analogReadMilliVolts(PINO_TEMP);
-    delay(2);
+void acionarBuzzerHttp() {
+  if (servidor.header("X-API-Key") != CHAVE_BUZZER) {
+    servidor.send(401, "text/plain", "Chave do buzzer incorreta.");
+    return;
   }
-  tensaoMv = soma / AMOSTRAS;
-  temperaturaC = ((float)tensaoMv - 500.0f) / 10.0f;
+  if (!buzzerPronto) {
+    servidor.send(503, "text/plain", "Buzzer desabilitado ate confirmar circuito.");
+    return;
+  }
+  iniciarBip();
+  servidor.send(200, "text/plain", "Bip autorizado (250 ms).");
+}
 
-  // So valida faixa fisica do sensor; a leitura pode exigir calibracao.
-  return (temperaturaC >= -40.0f && temperaturaC <= 125.0f);
+
+void enviarSaude() {
+  String j;
+  j.reserve(230);
+  j += "{\"setor\":\"" + String(ID_SETOR) + "\",\"status\":\"RESPONDENDO\",";
+  j += "\"esp32\":\"" + String(ESP_ID) + "\",";
+  j += "\"uptime_ms\":" + String(millis()) + ",";
+  j += "\"ultima_leitura_ms\":" + String(ultimaLeituraMs) + ",";
+  j += "\"clientes_wifi\":" + String(WiFi.softAPgetStationNum()) + "}";
+  servidor.sendHeader("Cache-Control", "no-store");
+  servidor.send(200, "application/json; charset=utf-8", j);
 }
 
 void enviarDados() {
-  int luz = analogRead(PINO_LDR);
-  int som = analogRead(PINO_MICROFONE);
-  int variacaoSom = medirVariacaoSom();
-
-  float temperaturaC = 0.0f;
-  uint32_t tensaoMv = 0;
-  bool tempDisponivel = lerTemperaturaTMP36(temperaturaC, tensaoMv);
-
-  String json;
-  json.reserve(300);
-  json += "{\"setor\":\"SETOR_01\",";
-  json += "\"luminosidade_adc\":" + String(luz) + ",";
-  json += "\"som_adc\":" + String(som) + ",";
-  json += "\"som_variacao\":" + String(variacaoSom) + ",";
-  json += "\"temperatura_disponivel\":";
-  json += (tempDisponivel ? "true" : "false");
-  json += ",\"temperatura_c\":";
-  json += (tempDisponivel ? String(temperaturaC, 1) : "null");
-  json += ",\"temperatura_mv\":";
-  json += (tempDisponivel ? String(tensaoMv) : "null");
-  json += ",\"clientes\":" + String(WiFi.softAPgetStationNum()) + ",";
-  json += "\"buzzer_ativo\":";
-  json += (bipEmAndamento ? "true" : "false");
-  json += "}";
-
+  String j;
+  j.reserve(950);
+  j += "{\"setor\":\"" + String(ID_SETOR) + "\",";
+  j += "\"luminosidade_adc\":" + String(ldrAdc) + ",";
+  j += "\"som_adc\":" + String(microfoneAdc) + ",";
+  j += "\"som_variacao\":" + String(variacaoMicrofone) + ",";
+  j += "\"som_saturado\":";
+  j += (microfoneSaturado ? "true" : "false");
+  j += ",\"dht_valido\":";
+  j += (dhtValido ? "true" : "false");
+  j += ",\"temperatura_c\":";
+  j += (dhtValido ? String(temperatura, 1) : "null");
+  j += ",\"umidade_percentual\":";
+  j += (dhtValido ? String(umidade, 1) : "null");
+  j += ",\"falhas_dht\":" + String(falhasDht) + ",";
+  j += "\"ultima_leitura_ms\":" + String(ultimaLeituraMs) + ",";
+  j += "\"uptime_ms\":" + String(millis()) + ",";
+  j += "\"clientes_wifi\":" + String(WiFi.softAPgetStationNum()) + ",";
+  j += "\"buzzer_ativo\":";
+  j += (bipAtivo ? "true" : "false");
+  j += ",\"chaveiros\":[";
+  bool primeiro = true;
+  for (const Chaveiro& c : chaveiros) {
+    if (!chaveiroPresente(c)) continue;
+    if (!primeiro) j += ',';
+    primeiro = false;
+    j += "{\"id\":\"" + c.id + "\",\"rssi_dbm\":" + String(c.rssi) + "}";
+  }
+  j += "]}";
   servidor.sendHeader("Cache-Control", "no-store");
-  servidor.send(200, "application/json; charset=utf-8", json);
+  servidor.send(200, "application/json; charset=utf-8", j);
 }
 
-// Apenas uma requisicao POST com chave valida pode disparar o buzzer.
-void receberComandoBuzzer() {
-  const String chaveRecebida = servidor.header("X-API-Key");
-  if (chaveRecebida.length() == 0 || chaveRecebida != CHAVE_BUZZER) {
-    servidor.sendHeader("Cache-Control", "no-store");
-    servidor.send(401, "text/plain; charset=utf-8", "Chave ausente ou incorreta.");
-    return;
+void iniciarAP() {
+  ultimaTentativaAPMs = millis();
+  WiFi.mode(WIFI_AP);
+  apIniciado = WiFi.softAP(NOME_REDE, SENHA_REDE, CANAL_WIFI);
+  if (apIniciado) {
+    Serial.print("[WIFI] Ponto de acesso inicializado em ");
+    Serial.println(WiFi.softAPIP());
+  } else {
+    Serial.println("[WIFI] Falha ao iniciar AP; nova tentativa em 10 segundos.");
   }
-  if (!buzzerConfigurado) {
-    servidor.send(503, "text/plain; charset=utf-8", "Buzzer nao configurado.");
-    return;
+}
+
+void verificarAP() {
+  if (millis() - ultimaTentativaAPMs < INTERVALO_VERIFICAR_AP_MS) return;
+  const bool modoApAtivo = ((WiFi.getMode() & WIFI_AP) != 0);
+  if (!apIniciado || !modoApAtivo) {
+    Serial.println("[WIFI] AP inativo localmente; tentando reiniciar...");
+    iniciarAP();
   }
-  buzzerSaida(true);
-  bipEmAndamento = true;
-  inicioBip = millis();
-  servidor.send(200, "text/plain; charset=utf-8", "Comando autorizado: bip de 250 ms.");
+  ultimaTentativaAPMs = millis();
+}
+
+void statusSerial() {
+  Serial.printf("[SETOR] %s | AP: %s | Clientes: %u | Chaveiros presentes: %d | Uptime: %lu s\n",
+                ID_SETOR, apIniciado ? "iniciado" : "nao iniciado",
+                WiFi.softAPgetStationNum(), contarChaveiros(),
+                millis() / 1000UL);
+  Serial.printf("[SENSORES] LDR=%d | MIC=%d (variacao=%d) | DHT11=",
+                ldrAdc, microfoneAdc, variacaoMicrofone);
+  if (dhtValido) Serial.printf("%.1f C / %.1f %%\n", temperatura, umidade);
+  else Serial.println("indisponivel");
+  Serial.println("[INFO] ESP32 em execucao != garantia de que outro dispositivo recebe seu Wi-Fi.");
+}
+
+void comandosSerial() {
+  static String linha;
+  while (Serial.available()) {
+    char c = (char)Serial.read();
+    if (c == '\r') continue;
+    if (c != '\n') {
+      if (linha.length() < 45) linha += c;
+      continue;
+    }
+    linha.trim();
+    linha.toUpperCase();
+    if (linha == "STATUS") statusSerial();
+    else if (linha == "JSON") enviarDadosSerial();
+    else if (linha == "BIP") {
+      if (buzzerPronto) iniciarBip();
+      else Serial.println("[BUZZER] Desabilitado. Verifique o circuito antes de ativar.");
+    } else if (linha == "AJUDA") {
+      Serial.println("Comandos: STATUS, JSON, BIP, AJUDA");
+    } else if (linha.length() > 0) {
+      Serial.println("Comando desconhecido. Digite AJUDA.");
+    }
+    linha = "";
+  }
+}
+
+void enviarDadosSerial() {
+  Serial.printf("{\"setor\":\"%s\",\"luminosidade_adc\":%d,\"som_adc\":%d,",
+                ID_SETOR, ldrAdc, microfoneAdc);
+  Serial.print("\"temperatura_c\":");
+  if (dhtValido) Serial.print(temperatura, 1); else Serial.print("null");
+  Serial.print(",\"umidade_percentual\":");
+  if (dhtValido) Serial.print(umidade, 1); else Serial.print("null");
+  Serial.printf(",\"chaveiros_presentes\":%d}\n", contarChaveiros());
 }
 
 void setup() {
   Serial.begin(115200);
-  delay(300);
+  delay(500);
+  Serial.println("\n=== AQUIIOT | SETOR 01 | TESTE LOCAL ===");
 
   analogReadResolution(12);
   pinMode(PINO_LDR, INPUT);
   pinMode(PINO_MICROFONE, INPUT);
-  if (TEM_TMP36) {
-    pinMode(PINO_TEMP, INPUT);
-    analogSetPinAttenuation(PINO_TEMP, ADC_11db);
-  }
+  dht.begin(); // A biblioteca DHT usa INPUT_PULLUP internamente.
 
   pinMode(PINO_BUZZER, OUTPUT);
   digitalWrite(PINO_BUZZER, LOW);
-
-  if (BUZZER_PASSIVO) {
+  if (HABILITAR_BUZZER) {
+    if (BUZZER_PASSIVO) {
 #if ESP_ARDUINO_VERSION_MAJOR >= 3
-    buzzerConfigurado = ledcAttach(PINO_BUZZER, 2000, 8);
+      buzzerPronto = ledcAttach(PINO_BUZZER, 2000, 8);
 #else
-    buzzerConfigurado = ledcSetup(0, 2000, 8) > 0;
-    if (buzzerConfigurado) ledcAttachPin(PINO_BUZZER, 0);
+      buzzerPronto = (ledcSetup(0, 2000, 8) > 0);
+      if (buzzerPronto) ledcAttachPin(PINO_BUZZER, 0);
 #endif
-    if (buzzerConfigurado) buzzerSaida(false);
-  } else {
-    buzzerConfigurado = true;
+    } else {
+      buzzerPronto = true;
+    }
   }
 
-  WiFi.mode(WIFI_AP);
-  if (!WiFi.softAP(NOME_REDE, SENHA_REDE)) {
-    Serial.println("ERRO: nao foi possivel criar o Wi-Fi!");
-    while (true) delay(1000);
-  }
-
-  // Sem esse registro, headers personalizados podem nao ser coletados.
-  const char* cabecalhos[] = {"X-API-Key"};
-  servidor.collectHeaders(cabecalhos, 1);
-
-  servidor.on("/", HTTP_GET, []() {
-    servidor.send(200, "text/html; charset=utf-8", PAGINA_HTML);
-  });
+  iniciarAP();
+  const char* cabecalhos[] = {"X-API-Key", "X-Device-Key"};
+  servidor.collectHeaders(cabecalhos, 2);
+  servidor.on("/saude", HTTP_GET, enviarSaude);
   servidor.on("/dados", HTTP_GET, enviarDados);
-  servidor.on("/apitar", HTTP_POST, receberComandoBuzzer);
+  servidor.on("/presenca", HTTP_POST, registrarPresenca);
+  servidor.on("/apitar", HTTP_POST, acionarBuzzerHttp);
+  servidor.on("/", HTTP_GET, []() {
+    servidor.send(200, "text/plain; charset=utf-8",
+      "AquiIoT - Setor 01. APIs: GET /saude, GET /dados. Testes via Monitor Serial.");
+  });
   servidor.onNotFound([]() {
-    servidor.send(404, "text/plain; charset=utf-8", "Rota nao encontrada.");
+    servidor.send(404, "text/plain", "Rota inexistente.");
   });
   servidor.begin();
 
-  Serial.println("\n=== AquiIoT: Setor 01 / v2 ===");
-  Serial.print("Wi-Fi: "); Serial.println(NOME_REDE);
-  Serial.print("Pagina: http://"); Serial.println(WiFi.softAPIP());
-  Serial.println("Buzzer: POST /apitar com X-API-Key");
-  Serial.println(TEM_TMP36 ? "TMP36 ativado no GPIO32" : "TMP36 ainda nao conectado");
+  lerSensores();
+  Serial.println("[TESTE] Monitor Serial em 115200, final de linha = Nova linha.");
+  Serial.println("[TESTE] Comandos: STATUS, JSON, BIP, AJUDA.");
+  Serial.println("[INFO] Nao ha necessidade de interface ou script Python para ler sensores.");
 }
 
 void loop() {
   servidor.handleClient();
+  comandosSerial();
+  verificarAP();
 
-  if (bipEmAndamento && millis() - inicioBip >= DURACAO_BIP_MS) {
-    buzzerSaida(false);
-    bipEmAndamento = false;
+  if (millis() - ultimaLeituraMs >= INTERVALO_SENSORES_MS) {
+    lerSensores();
   }
-
-  if (millis() - ultimoLog >= 2000) {
-    ultimoLog = millis();
-    Serial.print("LDR: "); Serial.print(analogRead(PINO_LDR));
-    Serial.print(" | Microfone: "); Serial.print(analogRead(PINO_MICROFONE));
-    float t;
-    uint32_t mV;
-    if (lerTemperaturaTMP36(t, mV)) {
-      Serial.print(" | Temperatura: "); Serial.print(t, 1); Serial.print(" C");
-    } else {
-      Serial.print(" | Temperatura: indisponivel");
-    }
-    Serial.print(" | Clientes: "); Serial.println(WiFi.softAPgetStationNum());
+  if (bipAtivo && millis() - inicioBipMs >= TEMPO_BIP_MS) {
+    buzzerSaida(false);
+    bipAtivo = false;
   }
 }
