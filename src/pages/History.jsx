@@ -1,4 +1,4 @@
-import { display, signal } from '../utils/format'
+import { display, signal, eventDay, eventDateTime } from '../utils/format'
 import { useState } from 'react'
 import { Details, Modal, Search, SectorFilter } from '../components/DataUI'
 // Horários sem data não permitem inferir o dia: a ordem da API é preservada nesse caso.
@@ -22,7 +22,7 @@ export default function History({ eventos }) {
         .toLowerCase()
         .includes(search.toLowerCase()) &&
       (!sector || [e.origem, e.destino, e.setor].includes(sector)) &&
-      (!dated || !date || fullDate(e).slice(0, 10) === date),
+      (!dated || !date || eventDay(fullDate(e)) === date),
   )
   if (dated)
     filtered.sort((a, b) => Date.parse(fullDate(b)) - Date.parse(fullDate(a)))
@@ -79,7 +79,7 @@ export default function History({ eventos }) {
           <tbody>
             {filtered.map((e, i) => (
               <tr key={e.id ?? i}>
-                <td>{display(fullDate(e) || e.horario)}</td>
+                <td>{display(fullDate(e) ? eventDateTime(fullDate(e)) : e.horario)}</td>
                 <td>
                   <button
                     className="text-button"

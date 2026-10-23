@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Dados persistentes SQLite e backups locais
+backend/data/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
