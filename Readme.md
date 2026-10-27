@@ -499,6 +499,8 @@ Projeto desenvolvido por uma equipe de três integrantes do curso de **Engenhari
 
 Toda a documentação necessária para compreender o projeto será mantida neste repositório.
 
+Implementação disponível: [banco de dados, API e execução na Raspberry Pi](docs/database.md) e [interface web](docs/frontend.md).
+
 Conforme o desenvolvimento avançar, serão adicionados:
 
 - diagramas da arquitetura;

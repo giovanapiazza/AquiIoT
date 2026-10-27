@@ -1,0 +1,5 @@
+const { openDatabase, DEFAULT_DATABASE_PATH } = require('./index')
+const db = openDatabase()
+console.log(`Banco inicializado: ${process.env.DATABASE_PATH || DEFAULT_DATABASE_PATH}`)
+console.log('Migrações:', db.prepare('SELECT versao FROM schema_migrations ORDER BY versao').all())
+db.close()
