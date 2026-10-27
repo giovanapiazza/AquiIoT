@@ -1,0 +1,22 @@
+digraph G { graph [fontname="DejaVu Sans", fontsize=11, bgcolor="white", pad=0.3, nodesep=0.35, ranksep=0.4];
+node [fontname="DejaVu Sans", fontsize=10, shape=box, style="rounded,filled", fillcolor="#E8F1F8", color="#2F5D7C", penwidth=1.2];
+edge [fontname="DejaVu Sans", fontsize=9, color="#2F5D7C"];
+ini [label="enviarAoBackend()", shape=oval, style=filled, fillcolor="#2F5D7C", fontcolor="white"];
+d0 [label="segredos.h ok e\nWi-Fi conectado?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+d1 [label="falhou há\nmenos de 10 s?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+d2 [label="setor já\nregistrado?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+r [label="POST /api/setores\n(201 ou 409 = ok)"];
+d3 [label="chaveiro presente e\nnovo ou sem envio há 60 s?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+p [label="POST /api/localizacao\n{dispositivo, setor, rssi}"];
+d4 [label="leituras prontas e\n30 s desde o último envio?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+s [label="POST /api/eventos\ntipo leitura_setor\n(temperatura, umidade, luz, som)"];
+d5 [label="há evento local\nainda não enviado?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+e [label="POST /api/eventos\ntipo setor (INFO/AVISO/ERRO)"];
+fim [label="volta ao loop()", shape=oval, style=filled, fillcolor="#2F5D7C", fontcolor="white"];
+ini->d0; d0->fim [label="não"]; d0->d1 [label="sim"];
+d1->fim [label="sim"]; d1->d2 [label="não"];
+d2->r [label="não"]; r->fim;
+d2->d3 [label="sim"]; d3->p [label="sim"]; p->fim;
+d3->d4 [label="não"]; d4->s [label="sim"]; s->fim;
+d4->d5 [label="não"]; d5->e [label="sim"]; e->fim; d5->fim [label="não"];
+}

@@ -1,0 +1,19 @@
+digraph G { graph [fontname="DejaVu Sans", fontsize=11, bgcolor="white", pad=0.3, nodesep=0.35, ranksep=0.4];
+node [fontname="DejaVu Sans", fontsize=10, shape=box, style="rounded,filled", fillcolor="#E8F1F8", color="#2F5D7C", penwidth=1.2];
+edge [fontname="DejaVu Sans", fontsize=9, color="#2F5D7C"];
+ini [label="enviarPresenca()", shape=oval, style=filled, fillcolor="#2F5D7C", fontcolor="white"];
+a [label="rssi = WiFi.RSSI()"];
+d1 [label="rssi ≥ 0?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+a1 [label="rssi = -1"];
+d2 [label="rssi < -120?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+a2 [label="rssi = -120"];
+b [label="POST http://192.168.4.1/presenca\nX-Device-Key: CHAVE_DISPOSITIVO\ncorpo: id=00000001&rssi=-25\ntimeout 2 s"];
+c [label="imprime código HTTP e resposta"];
+d3 [label="código?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+h401 [label="dica: conferir\nCHAVE_DISPOSITIVO"];
+h400 [label="dica: conferir\nID_CHAVEIRO"];
+fim [label="fim", shape=oval, style=filled, fillcolor="#2F5D7C", fontcolor="white"];
+ini->a->d1; d1->a1 [label="sim"]; d1->d2 [label="não"]; a1->d2;
+d2->a2 [label="sim"]; d2->b [label="não"]; a2->b; b->c->d3;
+d3->h401 [label="401"]; d3->h400 [label="400"]; d3->fim [label="outro"]; h401->fim; h400->fim;
+}

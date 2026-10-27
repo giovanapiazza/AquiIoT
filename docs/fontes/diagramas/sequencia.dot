@@ -1,0 +1,14 @@
+digraph G { graph [fontname="DejaVu Sans", fontsize=11, bgcolor="white", pad=0.3, nodesep=0.35, ranksep=0.4];
+node [fontname="DejaVu Sans", fontsize=10, shape=box, style="rounded,filled", fillcolor="#E8F1F8", color="#2F5D7C", penwidth=1.2];
+edge [fontname="DejaVu Sans", fontsize=9, color="#2F5D7C"]; rankdir=TB; ranksep=0.3;
+node [width=4.6];
+a [label="1. Chaveiro conecta no AP do setor (AquiIoT_Setor_01)"];
+b [label="2. Chaveiro mede o RSSI e envia POST /presenca (id, rssi)"];
+c [label="3. ESP32 valida a chave e os dados e grava na tabela local"];
+d [label="4. Chegada nova → marcada como pendente para o backend"];
+e [label="5. ESP32 envia POST /api/localizacao pela internet (HTTPS)"];
+f [label="6. Backend grava a localização e mostra no painel"];
+g [label="7. Chaveiro repete a cada 5 s; ESP32 reenvia ao backend a cada 60 s"];
+h [label="8. Sem mensagem por 15 s → ESP32 esquece; sem reenvio por 120 s → backend marca offline", fillcolor="#F8E1E1", color="#AA3333"];
+a->b->c->d->e->f->g->h;
+}

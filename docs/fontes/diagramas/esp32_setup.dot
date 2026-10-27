@@ -1,0 +1,19 @@
+digraph G { graph [fontname="DejaVu Sans", fontsize=11, bgcolor="white", pad=0.3, nodesep=0.35, ranksep=0.4];
+node [fontname="DejaVu Sans", fontsize=10, shape=box, style="rounded,filled", fillcolor="#E8F1F8", color="#2F5D7C", penwidth=1.2];
+edge [fontname="DejaVu Sans", fontsize=9, color="#2F5D7C"];
+ini [label="Liga / reset", shape=oval, style=filled, fillcolor="#2F5D7C", fontcolor="white"];
+s1 [label="Serial 115200\nADC 12 bits\npinos LDR / MIC como entrada\ndht.begin()"];
+s2 [label="Buzzer em LOW"];
+d1 [label="HABILITAR_BUZZER?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+s3 [label="Configura PWM (2 kHz)\nbuzzerPronto = true"];
+s4 [label="WiFi.onEvent(eventoWifi)"];
+s5 [label="iniciarAP()\nrede AquiIoT_Setor_01\ncanal 6, até 4 clientes"];
+d2 [label="segredos.h\npreenchido?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+s6 [label="iniciarSTA()\nconecta no Wi-Fi com internet"];
+s7 [label="Modo só local\n(dados ficam no ESP32)"];
+s8 [label="Registra rotas HTTP\n/saude /dados /eventos\n/presenca /apitar /"];
+s9 [label="servidor.begin()\nprimeira lerSensores()"];
+fim [label="loop()", shape=oval, style=filled, fillcolor="#2F5D7C", fontcolor="white"];
+ini->s1->s2->d1; d1->s3 [label="sim"]; d1->s4 [label="não"]; s3->s4->s5->d2;
+d2->s6 [label="sim"]; d2->s7 [label="não"]; s6->s8; s7->s8; s8->s9->fim;
+}

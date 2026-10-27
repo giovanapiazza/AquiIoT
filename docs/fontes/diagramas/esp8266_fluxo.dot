@@ -1,0 +1,20 @@
+digraph G { graph [fontname="DejaVu Sans", fontsize=11, bgcolor="white", pad=0.3, nodesep=0.35, ranksep=0.4];
+node [fontname="DejaVu Sans", fontsize=10, shape=box, style="rounded,filled", fillcolor="#E8F1F8", color="#2F5D7C", penwidth=1.2];
+edge [fontname="DejaVu Sans", fontsize=9, color="#2F5D7C"];
+ini [label="Liga / reset", shape=oval, style=filled, fillcolor="#2F5D7C", fontcolor="white"];
+s1 [label="Serial 115200\nmostra ID e rede"];
+s2 [label="Wi-Fi modo estação\nautoReconnect ligado\nWiFi.begin(AquiIoT_Setor_01)"];
+l [label="loop()", shape=oval, style=filled, fillcolor="#2F5D7C", fontcolor="white"];
+d1 [label="Wi-Fi\nconectado?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+d1b [label="estava\nconectado?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+lost [label="\"Sinal do setor perdido\"\nestavaConectado = false"];
+w [label="espera 500 ms"];
+d2 [label="acabou de\nconectar?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+c [label="mostra IP\nforça envio imediato"];
+d3 [label="passaram 5 s desde\no último envio?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+e [label="enviarPresenca()"];
+ini->s1->s2->l->d1;
+d1->d1b [label="não"]; d1b->lost [label="sim"]; d1b->w [label="não"]; lost->w; w->l [constraint=false];
+d1->d2 [label="sim"]; d2->c [label="sim"]; d2->d3 [label="não"]; c->d3;
+d3->e [label="sim"]; d3->l [label="não", constraint=false]; e->l [constraint=false];
+}

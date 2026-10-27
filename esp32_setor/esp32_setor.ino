@@ -1,7 +1,20 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <DHT.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <esp_arduino_version.h>
+
+// Wi-Fi com internet e endereco publico do backend (Tailscale Funnel).
+// Copie segredos.exemplo.h para segredos.h e preencha; sem esse arquivo o
+// setor funciona so localmente.
+#if __has_include("segredos.h")
+#include "segredos.h"
+#else
+const char* WIFI_STA_SSID = "";
+const char* WIFI_STA_SENHA = "";
+const char* URL_BACKEND = "";
+#endif
 
 const char* ID_SETOR = "SETOR_01";
 const char* NOME_SETOR = "Setor 01";
@@ -28,6 +41,13 @@ const int MAX_CHAVEIROS = 8; // capacidade de registros, nao de clientes simulta
 const int MAX_CLIENTES_WIFI = 4;
 const uint8_t LIMITE_FALHAS_SEGUIDAS = 3;
 const unsigned long INTERVALO_MINIMO_BIP_MS = 1000;
+
+// Envio ao backend (API + banco na Raspberry Pi).
+const unsigned long INTERVALO_ENVIO_SENSORES_MS = 30000;
+const unsigned long INTERVALO_REENVIO_PRESENCA_MS = 60000; // backend marca offline apos 120 s
+const unsigned long ESPERA_APOS_FALHA_MS = 10000;
+const unsigned long INTERVALO_RECONECTAR_STA_MS = 30000;
+const uint16_t TIMEOUT_BACKEND_MS = 5000; // HTTPS: o handshake TLS leva 1-2 s
 
 WebServer servidor(80);
 DHT dht(PINO_DHT, DHT11);
@@ -85,12 +105,27 @@ struct Chaveiro {
   int rssi = 0;                // informado pelo chaveiro
   unsigned long vistoMs = 0;
   bool utilizado = false;
+  bool pendenteBackend = false;  // entrada ainda nao enviada ao backend
+  unsigned long enviadoMs = 0;   // ultimo envio aceito pelo backend
 };
 Chaveiro chaveiros[MAX_CHAVEIROS];
+
+// Estado do envio ao backend.
+volatile bool eventoStaConectou = false;
+volatile bool eventoStaCaiu = false;
+unsigned long ultimaTentativaStaMs = 0;
+bool setorRegistrado = false;
+unsigned long ultimoEnvioSensoresMs = 0;
+unsigned long ultimaFalhaBackendMs = 0;
+bool houveFalhaBackend = false;
+bool backendRespondendo = false;
+uint32_t eventosRegistrados = 0; // contador continuo, para saber o que ja foi enviado
+uint32_t eventosEnviados = 0;
 
 bool chaveiroPresente(const Chaveiro& c);
 int contarChaveiros();
 void enviarDadosSerial();
+bool backendConfigurado();
 
 
 // ==========================================
@@ -100,6 +135,7 @@ void registrarEvento(const char* tipo, const char* origem, const char* descricao
   eventosSetor[proximoEvento] = {millis(), tipo, origem, descricao};
   proximoEvento = (proximoEvento + 1) % MAX_EVENTOS;
   if (totalEventos < MAX_EVENTOS) totalEventos++;
+  eventosRegistrados++;
   Serial.printf("[%s] %s: %s\n", tipo, origem, descricao);
 }
 
@@ -119,6 +155,12 @@ void eventoWifi(arduino_event_id_t evento) {
       break;
     case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED:
       eventosClienteDesconectado++;
+      break;
+    case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+      eventoStaConectou = true;
+      break;
+    case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+      eventoStaCaiu = true;
       break;
     default:
       break;
@@ -283,6 +325,10 @@ void registrarPresenca() {
   destino->id = id;
   destino->rssi = rssi;
   destino->vistoMs = millis();
+  if (novo) {
+    destino->pendenteBackend = true;
+    destino->enviadoMs = 0;
+  }
   if (novo) Serial.printf("[PRESENCA] Chaveiro %s, RSSI informado %d dBm\n", id.c_str(), rssi);
   servidor.send(200, "text/plain", "Presenca atualizada.");
 }
@@ -348,7 +394,11 @@ void enviarSaude() {
   j += "\"idade_leitura_ms\":" + String(millis() - ultimaLeituraMs) + ",";
   j += "\"clientes_wifi\":" + String(WiFi.softAPgetStationNum()) + ",";
   j += "\"limite_clientes_wifi\":" + String(MAX_CLIENTES_WIFI) + ",";
-  j += "\"ap_ativo_localmente\":";
+  j += "\"wifi_backend_conectado\":";
+  j += (WiFi.status() == WL_CONNECTED ? "true" : "false");
+  j += ",\"backend_respondendo\":";
+  j += (backendRespondendo ? "true" : "false");
+  j += ",\"ap_ativo_localmente\":";
   j += (apIniciado && modoApAtivo ? "true" : "false");
   j += ",\"sensores_degradados\":";
   j += (sensoresDegradados() ? "true" : "false");
@@ -443,7 +493,9 @@ void enviarEventos() {
 // A confirmacao de comunicacao depende de um monitor externo consultando /saude.
 void iniciarAP() {
   ultimaTentativaAPMs = millis();
-  WiFi.mode(WIFI_AP);
+  // AP + STA: o AP atende os chaveiros e o STA acessa o Wi-Fi com internet.
+  // Com o STA conectado, o AP passa a usar o canal do roteador.
+  WiFi.mode(backendConfigurado() ? WIFI_AP_STA : WIFI_AP);
   apIniciado = WiFi.softAP(NOME_REDE, SENHA_REDE, CANAL_WIFI, 0, MAX_CLIENTES_WIFI);
   if (apIniciado) {
     Serial.print("[WIFI] Ponto de acesso em ");
@@ -480,6 +532,162 @@ void verificarAP() {
     iniciarAP();
   }
   ultimaTentativaAPMs = millis();
+}
+
+// ==========================================
+// ENVIO AO BACKEND (RASPBERRY PI)
+// ==========================================
+// Cada chamada faz no maximo uma requisicao, para nao travar o servidor local
+// que recebe os chaveiros. Falhas so esperam e tentam de novo.
+bool backendConfigurado() {
+  return strlen(WIFI_STA_SSID) > 0 && strlen(URL_BACKEND) > 0;
+}
+
+void iniciarSTA() {
+  if (!backendConfigurado()) return;
+  ultimaTentativaStaMs = millis();
+  WiFi.setAutoReconnect(true);
+  WiFi.begin(WIFI_STA_SSID, WIFI_STA_SENHA);
+  Serial.printf("[BACKEND] Conectando a rede %s...\n", WIFI_STA_SSID);
+}
+
+void verificarSTA() {
+  if (!backendConfigurado()) return;
+  if (eventoStaConectou) {
+    eventoStaConectou = false;
+    Serial.print("[BACKEND] Wi-Fi conectado. IP: ");
+    Serial.println(WiFi.localIP());
+    registrarEvento("INFO", "BACKEND", "Wi-Fi com internet conectado.");
+  }
+  if (eventoStaCaiu) {
+    eventoStaCaiu = false;
+    backendRespondendo = false;
+  }
+  if (WiFi.status() != WL_CONNECTED &&
+      millis() - ultimaTentativaStaMs >= INTERVALO_RECONECTAR_STA_MS) {
+    Serial.println("[BACKEND] Wi-Fi desconectado; nova tentativa.");
+    iniciarSTA();
+  }
+}
+
+int postarJson(const char* caminho, const String& corpo) {
+  // Funnel usa HTTPS com certificado Let's Encrypt. setInsecure() nao confere o
+  // certificado (bom para testes); para validar, troque por
+  // cliente.setCACert(<raiz ISRG Root X1 em PEM>).
+  WiFiClientSecure cliente;
+  cliente.setInsecure();
+  HTTPClient http;
+  if (!http.begin(cliente, String(URL_BACKEND) + caminho)) return -1;
+  http.setConnectTimeout(TIMEOUT_BACKEND_MS);
+  http.setTimeout(TIMEOUT_BACKEND_MS);
+  http.addHeader("Content-Type", "application/json");
+  const int codigo = http.POST(corpo);
+  if (codigo >= 400) {
+    Serial.printf("[BACKEND] %s -> HTTP %d: %s\n", caminho, codigo, http.getString().c_str());
+  } else if (codigo < 0) {
+    Serial.printf("[BACKEND] %s -> %s\n", caminho, HTTPClient::errorToString(codigo).c_str());
+  }
+  http.end();
+  backendRespondendo = codigo > 0;
+  if (codigo < 0 || codigo >= 500) {
+    houveFalhaBackend = true;
+    ultimaFalhaBackendMs = millis();
+  }
+  return codigo;
+}
+
+// 2xx = aceito; 4xx = dado recusado, reenviar nao adianta; demais = tentar de novo.
+bool envioConcluido(int codigo) {
+  return codigo >= 200 && codigo < 500;
+}
+
+void registrarSetorNoBackend() {
+  String j = "{\"nome\":\"" + String(NOME_SETOR) + "\",\"esp32\":\"" + String(ESP_ID) + "\"}";
+  const int codigo = postarJson("/api/setores", j);
+  // 409: setor ja cadastrado, o que tambem serve.
+  if (envioConcluido(codigo)) {
+    setorRegistrado = true;
+    Serial.printf("[BACKEND] Setor %s pronto no backend (HTTP %d).\n", NOME_SETOR, codigo);
+  }
+}
+
+bool enviarPresencaBackend() {
+  Chaveiro* escolhido = nullptr;
+  for (Chaveiro& c : chaveiros) {
+    if (!chaveiroPresente(c)) continue;
+    if (c.pendenteBackend || millis() - c.enviadoMs >= INTERVALO_REENVIO_PRESENCA_MS) {
+      escolhido = &c;
+      break;
+    }
+  }
+  if (escolhido == nullptr) return false;
+  String j = "{\"dispositivo\":\"" + escolhido->id + "\",\"setor\":\"" + String(NOME_SETOR) +
+             "\",\"rssi\":" + String(escolhido->rssi) + "}";
+  const int codigo = postarJson("/api/localizacao", j);
+  if (envioConcluido(codigo)) {
+    escolhido->pendenteBackend = false;
+    escolhido->enviadoMs = millis();
+    if (codigo < 300) Serial.printf("[BACKEND] Presenca de %s enviada.\n", escolhido->id.c_str());
+  }
+  return true;
+}
+
+bool enviarSensoresBackend() {
+  if (!leiturasDisponiveis) return false;
+  if (ultimoEnvioSensoresMs != 0 && millis() - ultimoEnvioSensoresMs < INTERVALO_ENVIO_SENSORES_MS) return false;
+  // O backend ainda nao tem tabela de sensores do setor: a leitura vai como
+  // evento, com os valores em "detalhes" (aparece em /api/eventos/sistema).
+  String j;
+  j.reserve(360);
+  j += "{\"tipo\":\"leitura_setor\",\"nivel\":\"";
+  j += (sensoresDegradados() ? "aviso" : "info");
+  j += "\",\"setor\":\"" + String(NOME_SETOR) + "\"";
+  j += ",\"mensagem\":\"Leitura dos sensores do setor.\"";
+  j += ",\"detalhes\":{\"esp32\":\"" + String(ESP_ID) + "\"";
+  j += ",\"temperatura_c\":";
+  j += (dhtValido ? String(temperatura, 1) : "null");
+  j += ",\"umidade_percentual\":";
+  j += (dhtValido ? String(umidade, 1) : "null");
+  j += ",\"luminosidade_adc\":" + String(ldrAdc);
+  j += ",\"som_variacao\":" + String(variacaoMicrofone);
+  j += ",\"sensores_degradados\":";
+  j += (sensoresDegradados() ? "true" : "false");
+  j += "}}";
+  const int codigo = postarJson("/api/eventos", j);
+  if (envioConcluido(codigo)) ultimoEnvioSensoresMs = millis();
+  return true;
+}
+
+bool enviarEventoBackend() {
+  if (eventosEnviados == eventosRegistrados) return false;
+  // Eventos sobrescritos no historico circular antes do envio sao perdidos.
+  if (eventosRegistrados - eventosEnviados > totalEventos) {
+    eventosEnviados = eventosRegistrados - totalEventos;
+  }
+  const EventoSetor& e = eventosSetor[eventosEnviados % MAX_EVENTOS];
+  const char* nivel = strcmp(e.tipo, "ERRO") == 0 ? "erro" : strcmp(e.tipo, "AVISO") == 0 ? "aviso" : "info";
+  String j;
+  j.reserve(300);
+  j += "{\"tipo\":\"setor\",\"nivel\":\"" + String(nivel) + "\"";
+  j += ",\"setor\":\"" + String(NOME_SETOR) + "\"";
+  j += ",\"mensagem\":\"" + String(e.origem) + ": " + String(e.descricao) + "\"";
+  j += ",\"detalhes\":{\"esp32\":\"" + String(ESP_ID) + "\",\"tipo\":\"" + String(e.tipo);
+  j += "\",\"origem\":\"" + String(e.origem) + "\",\"uptime_ms\":" + String(e.ms) + "}}";
+  if (envioConcluido(postarJson("/api/eventos", j))) eventosEnviados++;
+  return true;
+}
+
+void enviarAoBackend() {
+  if (!backendConfigurado() || WiFi.status() != WL_CONNECTED) return;
+  if (houveFalhaBackend && millis() - ultimaFalhaBackendMs < ESPERA_APOS_FALHA_MS) return;
+  if (!setorRegistrado) {
+    registrarSetorNoBackend();
+    return;
+  }
+  // Prioridade: presenca dos chaveiros, depois sensores, depois eventos.
+  if (enviarPresencaBackend()) return;
+  if (enviarSensoresBackend()) return;
+  enviarEventoBackend();
 }
 
 void statusSerial() {
@@ -566,6 +774,8 @@ void setup() {
 
   WiFi.onEvent(eventoWifi);
   iniciarAP();
+  if (backendConfigurado()) iniciarSTA();
+  else Serial.println("[BACKEND] segredos.h ausente ou incompleto: dados ficam so no ESP32.");
   const char* cabecalhos[] = {"X-API-Key", "X-Device-Key"};
   servidor.collectHeaders(cabecalhos, 2);
   servidor.on("/saude", HTTP_GET, enviarSaude);
@@ -592,6 +802,8 @@ void loop() {
   servidor.handleClient();
   comandosSerial();
   verificarAP();
+  verificarSTA();
+  enviarAoBackend();
 
   if (millis() - ultimaLeituraMs >= INTERVALO_SENSORES_MS) {
     lerSensores();

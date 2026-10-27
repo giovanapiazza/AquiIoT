@@ -1,0 +1,21 @@
+digraph G { graph [fontname="DejaVu Sans", fontsize=11, bgcolor="white", pad=0.3, nodesep=0.35, ranksep=0.4];
+node [fontname="DejaVu Sans", fontsize=10, shape=box, style="rounded,filled", fillcolor="#E8F1F8", color="#2F5D7C", penwidth=1.2];
+edge [fontname="DejaVu Sans", fontsize=9, color="#2F5D7C"];
+ini [label="POST /presenca\n(vindo do chaveiro)", shape=oval, style=filled, fillcolor="#2F5D7C", fontcolor="white"];
+d1 [label="X-Device-Key\ncorreta?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+r401 [label="401 + evento AVISO", fillcolor="#F8E1E1", color="#AA3333"];
+d2 [label="id tem 8 dígitos e\nRSSI entre -120 e -1?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+r400 [label="400 + evento AVISO", fillcolor="#F8E1E1", color="#AA3333"];
+d3 [label="ID já está\nna tabela?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+d4 [label="há posição livre\nou expirada (>15 s)?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+r503 [label="503 (tabela cheia,\n8 registros)", fillcolor="#F8E1E1", color="#AA3333"];
+u [label="atualiza id, RSSI e\nhorário (vistoMs)"];
+d5 [label="chegada nova?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+p [label="marca pendenteBackend\n(será enviado à Raspberry)"];
+ok [label="200 \"Presença atualizada\"", shape=oval, style=filled, fillcolor="#2F5D7C", fontcolor="white"];
+ini->d1; d1->r401 [label="não"]; d1->d2 [label="sim"];
+d2->r400 [label="não"]; d2->d3 [label="sim"];
+d3->u [label="sim"]; d3->d4 [label="não"];
+d4->u [label="sim"]; d4->r503 [label="não"];
+u->d5; d5->p [label="sim"]; d5->ok [label="não"]; p->ok;
+}

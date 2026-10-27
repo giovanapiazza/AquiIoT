@@ -1,0 +1,17 @@
+digraph G { graph [fontname="DejaVu Sans", fontsize=11, bgcolor="white", pad=0.3, nodesep=0.35, ranksep=0.4];
+node [fontname="DejaVu Sans", fontsize=10, shape=box, style="rounded,filled", fillcolor="#E8F1F8", color="#2F5D7C", penwidth=1.2];
+edge [fontname="DejaVu Sans", fontsize=9, color="#2F5D7C"];
+ini [label="início do loop()", shape=oval, style=filled, fillcolor="#2F5D7C", fontcolor="white"];
+a [label="servidor.handleClient()\natende chaveiros e consultas HTTP"];
+b [label="comandosSerial()\nSTATUS / JSON / BIP / AJUDA"];
+c [label="verificarAP()\nregistra conexões; a cada 10 s\nreinicia o AP se caiu"];
+d [label="verificarSTA()\nreconecta o Wi-Fi de internet\na cada 30 s se caiu"];
+e [label="enviarAoBackend()\nno máximo 1 requisição HTTPS"];
+d1 [label="passaram 5 s desde\na última leitura?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+f [label="lerSensores()\nLDR, microfone, DHT11"];
+d2 [label="bip ativo há\n≥ 250 ms?", shape=diamond, style=filled, fillcolor="#FFF4D6", color="#B7862B"];
+g [label="desliga o buzzer"];
+ini->a->b->c->d->e->d1;
+d1->f [label="sim"]; d1->d2 [label="não"]; f->d2;
+d2->g [label="sim"]; d2->ini [label="não", constraint=false]; g->ini [constraint=false];
+}

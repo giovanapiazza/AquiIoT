@@ -1,0 +1,22 @@
+digraph G { graph [fontname="DejaVu Sans", fontsize=11, bgcolor="white", pad=0.3, nodesep=0.35, ranksep=0.4];
+node [fontname="DejaVu Sans", fontsize=10, shape=box, style="rounded,filled", fillcolor="#E8F1F8", color="#2F5D7C", penwidth=1.2];
+edge [fontname="DejaVu Sans", fontsize=9, color="#2F5D7C"]; rankdir=TB; ranksep=0.5;
+subgraph cluster_set { label="Setor 01"; style="rounded,dashed"; color="#888888";
+  ch [label="Chaveiro\nESP8266 / ESP-01S\nID 00000001"];
+  esp [label="ESP32 do setor\nAP AquiIoT_Setor_01\n192.168.4.1\nLDR · microfone · DHT11 · buzzer"];
+}
+rot [label="Roteador Wi-Fi\ncom internet\n(rede a22)", fillcolor="#EEEEEE", color="#666666"];
+fun [label="Tailscale Funnel\nHTTPS público\nraspberrypi...ts.net", fillcolor="#EEEEEE", color="#666666"];
+subgraph cluster_pi { label="Raspberry Pi"; style="rounded,dashed"; color="#888888";
+  vite [label="Front-end React\n(Vite, porta 5173)\nproxy /api"];
+  api [label="Backend Node/Express\n(porta 3000)\nAPI + banco"];
+}
+nav [label="Navegador\n(painel web)", fillcolor="#EEEEEE", color="#666666"];
+ch->esp [label="Wi-Fi local\nPOST /presenca\na cada 5 s"];
+esp->rot [label="modo estação"];
+rot->fun [label="HTTPS"];
+fun->vite [label="porta 443"];
+vite->api [label="/api/*"];
+nav->fun [label="HTTPS", dir=both];
+fun->api [label="porta 8443\n(hoje com falha)", style=dashed, color="#AA3333", fontcolor="#AA3333"];
+}
