@@ -16,9 +16,12 @@ const char* WIFI_STA_SENHA = "";
 const char* URL_BACKEND = "";
 #endif
 
-const char* ID_SETOR = "SETOR_01";
-const char* NOME_SETOR = "Setor 01";
-const char* ESP_ID = "ESP32-01";
+// Padrao de identificacao PPSSAATTNN (planta, setor, area, tipo, no).
+// O chaveiro conhece so o proprio TTNN; este ESP32 acrescenta o PPSSAA da area.
+// Os nomes ficam no cadastro central do backend (backend/identificacao.js).
+const char* CODIGO_LOCAL = "010302";   // PPSSAA: 01 hospital, 03 enfermaria, 02 ala B
+const char* ID_SETOR = CODIGO_LOCAL;
+const char* ESP_ID = "0103020201";     // PPSSAA + TT 02 (ESP32) + NN 01
 const char* NOME_REDE = "AquiIoT_Setor_01";
 const char* SENHA_REDE = "12345678"; // minimo 8 caracteres
 const char* CHAVE_BUZZER = "MUDE_ESTA_CHAVE_PRIVADA_DO_BUZZER";
@@ -102,6 +105,7 @@ bool algumBipExecutado = false;
 
 struct Chaveiro {
   String id;
+  String nome;                 // nome do usuario gravado no chaveiro (opcional)
   int rssi = 0;                // informado pelo chaveiro
   unsigned long vistoMs = 0;
   bool utilizado = false;
@@ -273,8 +277,9 @@ void lerSensores() {
   Serial.println(" (zero e normal)");
 }
 
+// ID do chaveiro: TTNN (4 digitos)
 bool idValido(const String& id) {
-  if (id.length() != 8) return false;
+  if (id.length() != 4) return false;
   for (unsigned int i = 0; i < id.length(); i++) {
     if (id[i] < '0' || id[i] > '9') return false;
   }
@@ -299,10 +304,11 @@ void registrarPresenca() {
   }
   const String id = servidor.arg("id");
   const String rssiStr = servidor.arg("rssi");
+  const String nome = servidor.arg("nome");
   int rssi = 0;
-  if (!idValido(id) || !rssiValido(rssiStr, rssi)) {
+  if (!idValido(id) || !rssiValido(rssiStr, rssi) || nome.length() > 32) {
     registrarEvento("AVISO", "PRESENCA", "Mensagem rejeitada: ID ou RSSI invalido.");
-    servidor.send(400, "text/plain", "Informe id com 8 digitos e RSSI valido (-120 a -1).");
+    servidor.send(400, "text/plain", "Informe id com 4 digitos (TTNN) e RSSI valido (-120 a -1).");
     return;
   }
 
@@ -325,6 +331,8 @@ void registrarPresenca() {
   destino->id = id;
   destino->rssi = rssi;
   destino->vistoMs = millis();
+  if (destino->nome != nome) destino->pendenteBackend = true;
+  destino->nome = nome;
   if (novo) {
     destino->pendenteBackend = true;
     destino->enviadoMs = 0;
@@ -496,7 +504,8 @@ void iniciarAP() {
   // AP + STA: o AP atende os chaveiros e o STA acessa o Wi-Fi com internet.
   // Com o STA conectado, o AP passa a usar o canal do roteador.
   WiFi.mode(backendConfigurado() ? WIFI_AP_STA : WIFI_AP);
-  apIniciado = WiFi.softAP(NOME_REDE, SENHA_REDE, CANAL_WIFI, 0, MAX_CLIENTES_WIFI);
+  // 1 = rede invisivel: os chaveiros conectam pelo nome, mas ela nao aparece na lista
+  apIniciado = WiFi.softAP(NOME_REDE, SENHA_REDE, CANAL_WIFI, 1, MAX_CLIENTES_WIFI);
   if (apIniciado) {
     Serial.print("[WIFI] Ponto de acesso em ");
     Serial.println(WiFi.softAPIP());
@@ -602,13 +611,25 @@ bool envioConcluido(int codigo) {
 }
 
 void registrarSetorNoBackend() {
-  String j = "{\"nome\":\"" + String(NOME_SETOR) + "\",\"esp32\":\"" + String(ESP_ID) + "\"}";
+  // Sem nome: o backend usa o nome da area no cadastro central
+  String j = "{\"codigo\":\"" + String(CODIGO_LOCAL) + "\",\"esp32\":\"" + String(ESP_ID) + "\"}";
   const int codigo = postarJson("/api/setores", j);
   // 409: setor ja cadastrado, o que tambem serve.
   if (envioConcluido(codigo)) {
     setorRegistrado = true;
-    Serial.printf("[BACKEND] Setor %s pronto no backend (HTTP %d).\n", NOME_SETOR, codigo);
+    Serial.printf("[BACKEND] Area %s pronta no backend (HTTP %d).\n", CODIGO_LOCAL, codigo);
   }
+}
+
+// Texto como string JSON (o nome do usuario pode ter aspas ou acentos)
+String textoJson(const String& texto) {
+  String r = "\"";
+  for (unsigned int i = 0; i < texto.length(); i++) {
+    const char c = texto[i];
+    if (c == '"' || c == '\\') { r += '\\'; r += c; }
+    else if (static_cast<unsigned char>(c) >= 0x20) r += c;
+  }
+  return r + "\"";
 }
 
 bool enviarPresencaBackend() {
@@ -621,8 +642,11 @@ bool enviarPresencaBackend() {
     }
   }
   if (escolhido == nullptr) return false;
-  String j = "{\"dispositivo\":\"" + escolhido->id + "\",\"setor\":\"" + String(NOME_SETOR) +
-             "\",\"rssi\":" + String(escolhido->rssi) + "}";
+  // Codigo completo PPSSAATTNN: area deste ESP32 + TTNN do chaveiro
+  String j = "{\"codigo\":\"" + String(CODIGO_LOCAL) + escolhido->id + "\",\"esp32\":\"" +
+             String(ESP_ID) + "\",\"rssi\":" + String(escolhido->rssi);
+  if (escolhido->nome.length()) j += ",\"nome\":" + textoJson(escolhido->nome);
+  j += "}";
   const int codigo = postarJson("/api/localizacao", j);
   if (envioConcluido(codigo)) {
     escolhido->pendenteBackend = false;
@@ -641,7 +665,7 @@ bool enviarSensoresBackend() {
   j.reserve(360);
   j += "{\"tipo\":\"leitura_setor\",\"nivel\":\"";
   j += (sensoresDegradados() ? "aviso" : "info");
-  j += "\",\"setor\":\"" + String(NOME_SETOR) + "\"";
+  j += "\",\"setor\":\"" + String(CODIGO_LOCAL) + "\"";
   j += ",\"mensagem\":\"Leitura dos sensores do setor.\"";
   j += ",\"detalhes\":{\"esp32\":\"" + String(ESP_ID) + "\"";
   j += ",\"temperatura_c\":";
@@ -669,7 +693,7 @@ bool enviarEventoBackend() {
   String j;
   j.reserve(300);
   j += "{\"tipo\":\"setor\",\"nivel\":\"" + String(nivel) + "\"";
-  j += ",\"setor\":\"" + String(NOME_SETOR) + "\"";
+  j += ",\"setor\":\"" + String(CODIGO_LOCAL) + "\"";
   j += ",\"mensagem\":\"" + String(e.origem) + ": " + String(e.descricao) + "\"";
   j += ",\"detalhes\":{\"esp32\":\"" + String(ESP_ID) + "\",\"tipo\":\"" + String(e.tipo);
   j += "\",\"origem\":\"" + String(e.origem) + "\",\"uptime_ms\":" + String(e.ms) + "}}";

@@ -1,10 +1,19 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>aquiiot</title>
+    <meta name="color-scheme" content="light dark" />
+    <title>AquiIoT</title>
+    <script>
+      // Aplica o tema escolhido antes da primeira pintura, sem piscar
+      try {
+        const theme = localStorage.getItem('aquiiot.theme')
+        if (theme === 'light' || theme === 'dark')
+          document.documentElement.dataset.theme = theme
+      } catch {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

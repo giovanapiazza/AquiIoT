@@ -1,108 +1,99 @@
-import { display, signal, eventDay, eventDateTime } from '../utils/format'
-import { useState } from 'react'
-import { Details, Modal, Search, SectorFilter } from '../components/DataUI'
-// Horários sem data não permitem inferir o dia: a ordem da API é preservada nesse caso.
-function fullDate(event) {
-  const value = event.data || event.timestamp || event.dataHora
-  return typeof value === 'string' &&
-    /^\d{4}-\d{2}-\d{2}/.test(value) &&
-    !Number.isNaN(Date.parse(value))
-    ? value
-    : null
-}
-export default function History({ eventos }) {
+import { useMemo, useState } from 'react'
+import { PageHeader } from '../components/Shell'
+import { Empty, Search, SelectField } from '../components/DataUI'
+import { VisitList } from '../components/Visits'
+import DeviceSheet from '../components/DeviceSheet'
+import { dayTitle, eventDay, plural } from '../utils/format'
+import { areaName, personName } from '../utils/places'
+import { visits } from '../utils/events'
+
+export default function History({ eventos, dispositivos, setores }) {
   const [search, setSearch] = useState('')
-  const [sector, setSector] = useState('')
-  const [date, setDate] = useState('')
+  const [area, setArea] = useState('')
+  const [day, setDay] = useState('')
   const [selected, setSelected] = useState(null)
-  const dated = eventos.length > 0 && eventos.every((e) => fullDate(e))
-  const filtered = eventos.filter(
-    (e) =>
-      String(e.dispositivo || '')
+  const byId = new Map(dispositivos.map((d) => [d.id, d]))
+  const term = search.trim().toLowerCase()
+
+  const all = useMemo(() => visits(eventos), [eventos])
+  const filtered = all.filter(
+    (v) =>
+      `${personName(byId.get(v.dispositivo), v.dispositivo)} ${v.dispositivo}`
         .toLowerCase()
-        .includes(search.toLowerCase()) &&
-      (!sector || [e.origem, e.destino, e.setor].includes(sector)) &&
-      (!dated || !date || eventDay(fullDate(e)) === date),
+        .includes(term) &&
+      (!area || v.setor === area || v.origem === area) &&
+      (!day || eventDay(v.inicio) === day),
   )
-  if (dated)
-    filtered.sort((a, b) => Date.parse(fullDate(b)) - Date.parse(fullDate(a)))
+  // Agrupa por dia, do mais recente ao mais antigo
+  const days = []
+  for (const visit of filtered) {
+    const key = eventDay(visit.inicio)
+    if (days.at(-1)?.key !== key) days.push({ key, visits: [] })
+    days.at(-1).visits.push(visit)
+  }
+  const areas = [
+    ...new Set([...setores.map((s) => s.nome), ...all.map((v) => v.setor)].filter(Boolean)),
+  ]
+  const filtering = term || area || day
+  const device = selected && dispositivos.find((d) => d.id === selected)
+
   return (
     <>
-      <div className="filters">
-        <Search
-          value={search}
-          onChange={setSearch}
-          label="Buscar dispositivo"
-        />
-        <SectorFilter
-          values={[
-            ...new Set(
-              eventos
-                .flatMap((e) => [e.origem, e.destino, e.setor])
-                .filter(Boolean),
-            ),
-          ]}
-          value={sector}
-          onChange={setSector}
-        />
-        <label className="filter-field">
-          <span>Data</span>
-          <input
-            type="date"
-            disabled={!dated}
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
+      <PageHeader title="Histórico">
+        Por onde cada chaveiro passou. Detecções seguidas na mesma área aparecem
+        como uma só permanência.
+      </PageHeader>
+
+      <div className="toolbar">
+        <Search value={search} onChange={setSearch} label="Buscar pessoa ou chaveiro" />
+        <SelectField label="Área" value={area} onChange={setArea}>
+          <option value="">Todas</option>
+          {areas.map((nome) => (
+            <option key={nome} value={nome}>
+              {areaName(nome)}
+            </option>
+          ))}
+        </SelectField>
+        <label className="field field-inline">
+          <span>Dia</span>
+          <input type="date" value={day} onChange={(e) => setDay(e.target.value)} />
         </label>
-      </div>
-      <p className="muted">
-        {filtered.length} de {eventos.length} registros
-      </p>
-      {!dated && (
-        <p className="muted">
-          A API não fornece data completa para todos os registros. Filtro de
-          data indisponível; registros na ordem de recebimento, com os mais
-          recentes primeiro.
-        </p>
-      )}
-      <div className="table-scroll">
-        <table className="data-table">
-          <thead>
-            <tr>
-              {['Horário', 'Dispositivo', 'Origem', 'Destino', 'RSSI'].map(
-                (h) => (
-                  <th key={h}>{h}</th>
-                ),
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((e, i) => (
-              <tr key={e.id ?? i}>
-                <td>{display(fullDate(e) ? eventDateTime(fullDate(e)) : e.horario)}</td>
-                <td>
-                  <button
-                    className="text-button"
-                    onClick={() => setSelected(e)}
-                  >
-                    {display(e.dispositivo)}
-                  </button>
-                </td>
-                <td>{display(e.origem)}</td>
-                <td>{display(e.destino || e.setor)}</td>
-                <td>{signal(e.rssi)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!filtered.length && (
-          <p className="table-empty">Nenhum registro encontrado.</p>
+        {filtering && (
+          <button
+            className="button button-quiet"
+            onClick={() => {
+              setSearch('')
+              setArea('')
+              setDay('')
+            }}
+          >
+            Limpar filtros
+          </button>
         )}
       </div>
-      {selected && (
-        <Modal title="Detalhes do registro" onClose={() => setSelected(null)}>
-          <Details data={selected} />
-        </Modal>
+
+      {all.length === 0 ? (
+        <Empty title="Nenhuma movimentação registrada">
+          O histórico começa quando uma área detecta o primeiro chaveiro.
+        </Empty>
+      ) : days.length === 0 ? (
+        <Empty title="Nada encontrado com esses filtros">
+          Tente outro dia ou limpe os filtros.
+        </Empty>
+      ) : (
+        days.map(({ key, visits: list }) => (
+          <section className="day" key={key} aria-labelledby={`dia-${key}`}>
+            <h2 id={`dia-${key}`} className="day-title">
+              {dayTitle(key)}
+              <span>{plural(list.length, 'registro', 'registros')}</span>
+            </h2>
+            <VisitList visits={list} devices={dispositivos} onSelect={setSelected} />
+          </section>
+        ))
+      )}
+
+      {device && (
+        <DeviceSheet device={device} eventos={eventos} onClose={() => setSelected(null)} />
       )}
     </>
   )

@@ -1,0 +1,39 @@
+# Ambiente de desenvolvimento local: API + banco SQLite + interface, com hot reload.
+# Uso: `docker compose up` (ou `podman compose up`). Detalhes em docs/ambiente-dev.md.
+name: aquiiot-dev
+
+services:
+  api:
+    image: docker.io/library/node:24-alpine
+    working_dir: /app/backend
+    command: sh -c "npm ci --no-audit --no-fund && node --watch server.js"
+    environment:
+      DATABASE_PATH: /data/aquiiot.sqlite
+      PORT: "3000"
+      HOST: 0.0.0.0
+      OFFLINE_AFTER_MS: "120000"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app/backend
+      - api_node_modules:/app/backend/node_modules
+      - aquiiot_data:/data
+
+  web:
+    image: docker.io/library/node:24-alpine
+    working_dir: /app
+    command: sh -c "npm ci --no-audit --no-fund && npm run dev -- --host 0.0.0.0 --port 5173 --strictPort"
+    environment:
+      VITE_API_URL: http://localhost:3000
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - web_node_modules:/app/node_modules
+    depends_on:
+      - api
+
+volumes:
+  aquiiot_data:
+  api_node_modules:
+  web_node_modules:

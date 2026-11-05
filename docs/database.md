@@ -49,6 +49,7 @@ erDiagram
     dispositivos o|--o{ eventos : relacionado
     setores o|--o{ eventos : destino_ou_contexto
     setores o|--o{ eventos : origem
+    setores ||--o{ receptores : detecta
     localizacoes o|--o{ eventos : gera
 
     dispositivos {
@@ -59,8 +60,14 @@ erDiagram
     setores {
         INTEGER id PK
         TEXT nome UK
-        TEXT esp32 UK "opcional"
+        TEXT codigo UK "opcional, PPSSAA"
+        TEXT esp32 "obsoleta, sempre vazia (ver receptores)"
         TEXT descricao "opcional"
+        INTEGER criado_em "epoch em ms"
+    }
+    receptores {
+        TEXT id PK "ESP32, PPSSAA02NN"
+        INTEGER setor_id FK
         INTEGER criado_em "epoch em ms"
     }
     localizacoes {
@@ -141,7 +148,7 @@ As respostas de listagem permanecem arrays JSON. Erros usam `{ "erro": "mensagem
 | `GET /api/dispositivos/:id/historico` | Detecções do dispositivo, mais recentes primeiro. |
 | `GET /api/dispositivos/:id/leituras/ultima` | Último valor não nulo de cada sensor, com datas independentes. |
 | `GET /api/setores` | Setores reais cadastrados ou descobertos. |
-| `POST /api/setores` | Configurar setor e ESP32. Também completa um setor descoberto sem ESP32. |
+| `POST /api/setores` | Configurar setor e associar um ESP32 (receptor) a ele. Uma área pode ter vários ESP32. Responde `201` quando cria setor ou receptor e `200` quando tudo já estava cadastrado; `409` só em conflito, como ESP32 de outro setor. |
 | `GET /api/setores/:id/dispositivos` | Dispositivos cujo último setor conhecido é o setor indicado. |
 | `POST /api/localizacao` | Registrar detecção; descobrir dispositivo e setor quando novos; gerar evento e, opcionalmente, gravar sensores. |
 | `GET /api/localizacoes` | Histórico de detecções. |
@@ -321,3 +328,44 @@ A estrutura permite integrar ESP8266 → ESP32 → backend na Raspberry Pi → f
 
 - [SQLite: aplicações embarcadas e IoT](https://www.sqlite.org/whentouse.html).
 - [API SQLite do Node.js 24](https://nodejs.org/download/release/latest-v24.x/docs/api/sqlite.html).
+
+## Identificação PPSSAATTNN
+
+Cada placa tem um código de 10 dígitos: planta (PP), setor (SS), área (AA),
+tipo de hardware (TT: 01 Raspberry Pi, 02 ESP32, 03 ESP8266) e número do nó
+(NN). O chaveiro (ESP8266) guarda só o próprio TTNN; o ESP32 da área acrescenta
+o PPSSAA e envia o código completo:
+
+```bash
+curl -X POST http://localhost:3000/api/setores -H 'Content-Type: application/json' \
+  -d '{"codigo":"010302","esp32":"0103020201"}'
+curl -X POST http://localhost:3000/api/localizacao -H 'Content-Type: application/json' \
+  -d '{"codigo":"0103020301","esp32":"0103020201","rssi":-58}'
+```
+
+O backend decodifica o código com o cadastro central de nomes
+([`backend/identificacao.js`](../backend/identificacao.js)): o dispositivo é o
+TTNN (`0301`), que continua o mesmo quando o chaveiro muda de área, e o setor é
+a área PPSSAA (`Hospital · Enfermaria · Ala B`), criada na primeira detecção e
+reconhecida pelo código mesmo se for renomeada. O código completo de cada
+detecção fica em `localizacoes.codigo` e aparece em `/api/dispositivos`,
+`/api/localizacoes` e `/api/eventos`, junto com o tipo e o número do nó.
+O campo opcional `nome` (até 60 caracteres) traz o nome do usuário gravado no
+chaveiro e atualiza `dispositivos.nome`; a interface mostra quem está em cada
+setor. `POST /api/eventos` aceita o PPSSAA no campo `setor`. O formato antigo
+(`dispositivo` + `setor`) continua aceito.
+
+Quando o chaveiro sai da rede do setor, o ESP32 envia
+`POST /api/saida` com `{"codigo":"0103020301"}`: o dispositivo fica offline
+na hora (sem esperar `OFFLINE_AFTER_MS`) até a próxima localização, e o
+histórico ganha um evento `saida` com o setor de origem. A área só percebe a
+saída alguns segundos depois; se nesse meio-tempo o chaveiro já foi detectado
+em outra área, o aviso é ignorado (resposta `200` com `"ignorado": true`, sem
+evento) e o chaveiro continua online na área nova.
+
+Áreas grandes podem ter mais de um ESP32 (`0103020201`, `0103020202`…): cada
+um é um receptor da área na tabela `receptores` (migração `004`, que levou
+para lá o antigo `setores.esp32`). `GET /api/setores` traz a lista em
+`receptores`; o campo `esp32` continua com o primeiro, para clientes antigos.
+Um ESP32 desconhecido que envia uma localização é cadastrado como receptor da
+área detectada.

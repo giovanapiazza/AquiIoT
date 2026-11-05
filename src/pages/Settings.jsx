@@ -1,20 +1,10 @@
 import { useEffect, useState } from 'react'
+import { PageHeader } from '../components/Shell'
+import { Segmented } from '../components/DataUI'
 import { API_URL, testConnection } from '../services/api'
-export default function Settings({ interval, onIntervalChange }) {
+
+export default function Settings({ interval, onIntervalChange, theme, onThemeChange }) {
   const [connection, setConnection] = useState('checking')
-  useEffect(() => {
-    let active = true
-    testConnection()
-      .then(() => {
-        if (active) setConnection('online')
-      })
-      .catch(() => {
-        if (active) setConnection('offline')
-      })
-    return () => {
-      active = false
-    }
-  }, [])
   async function check() {
     setConnection('checking')
     try {
@@ -24,76 +14,90 @@ export default function Settings({ interval, onIntervalChange }) {
       setConnection('offline')
     }
   }
+  useEffect(() => {
+    let active = true
+    testConnection()
+      .then(() => active && setConnection('online'))
+      .catch(() => active && setConnection('offline'))
+    return () => {
+      active = false
+    }
+  }, [])
+
   return (
-    <div className="settings-grid">
-      <section className="settings-section">
-        <h2>Informações do sistema</h2>
-        <dl className="details-list">
+    <>
+      <PageHeader title="Ajustes">
+        Preferências deste navegador e conexão com o servidor.
+      </PageHeader>
+      <div className="settings">
+        <section className="setting">
           <div>
-            <dt>Nome</dt>
-            <dd>AquiIoT</dd>
+            <h2>Atualizar a cada</h2>
+            <p className="hint">
+              Com que frequência a tela consulta o servidor. Intervalos curtos
+              mostram as mudanças mais cedo.
+            </p>
           </div>
-          <div>
-            <dt>Versão</dt>
-            <dd>1.0</dd>
-          </div>
-          <div>
-            <dt>Finalidade</dt>
-            <dd>Projeto acadêmico de localização indoor</dd>
-          </div>
-          <div>
-            <dt>Tecnologias</dt>
-            <dd>React, Vite, Node.js, Express, ESP8266 e ESP32</dd>
-          </div>
-        </dl>
-      </section>
-      <section className="settings-section">
-        <h2>Conexão com o servidor</h2>
-        <p className="api-address">{API_URL}</p>
-        <p role="status" className="muted">
-          {connection === 'checking'
-            ? 'Verificando conexão…'
-            : connection === 'online'
-              ? 'Conexão estabelecida com os três endpoints.'
-              : 'Servidor indisponível ou resposta inválida.'}
-        </p>
-        <button
-          className="primary-button"
-          disabled={connection === 'checking'}
-          onClick={check}
-        >
-          Testar conexão
-        </button>
-      </section>
-      <section className="settings-section">
-        <h2>Atualização dos dados</h2>
-        <label className="filter-field">
-          <span>Intervalo de atualização do dashboard</span>
-          <select
-            aria-label="Intervalo de atualização do dashboard"
+          <Segmented
+            label="Atualizar a cada"
             value={interval}
-            onChange={(e) => onIntervalChange(Number(e.target.value))}
+            onChange={onIntervalChange}
+            options={[2, 5, 10].map((n) => [n, `${n} s`])}
+          />
+        </section>
+
+        <section className="setting">
+          <div>
+            <h2>Aparência</h2>
+            <p className="hint">Automática segue o tema do sistema.</p>
+          </div>
+          <Segmented
+            label="Aparência"
+            value={theme}
+            onChange={onThemeChange}
+            options={[
+              ['auto', 'Automática'],
+              ['light', 'Clara'],
+              ['dark', 'Escura'],
+            ]}
+          />
+        </section>
+
+        <section className="setting">
+          <div>
+            <h2>Servidor</h2>
+            <p className="server-address">{API_URL}</p>
+            <p
+              role="status"
+              className={`server-state is-${connection}`}
+            >
+              {connection === 'checking'
+                ? 'Verificando…'
+                : connection === 'online'
+                  ? 'Conectado. Chaveiros, áreas e histórico respondem.'
+                  : 'Sem resposta. Confira se a API está rodando e se o endereço acima está certo (variável VITE_API_URL).'}
+            </p>
+          </div>
+          <button
+            className="button"
+            disabled={connection === 'checking'}
+            onClick={check}
           >
-            {[2, 5, 10].map((n) => (
-              <option key={n} value={n}>
-                {n} segundos
-              </option>
-            ))}
-          </select>
-        </label>
-        <p className="muted">
-          Aplicado automaticamente em todas as páginas. Preferência salva neste
-          navegador quando o armazenamento está disponível.
-        </p>
-      </section>
-      <section className="settings-section">
-        <h2>Sobre o projeto</h2>
-        <p>
-          O AquiIoT identifica dispositivos por sinais recebidos nos setores e
-          apresenta a localização atual e o histórico de detecções.
-        </p>
-        <p className="architecture">ESP8266 → ESP32 → backend → frontend</p>
-      </section>
-    </div>
+            Testar conexão
+          </button>
+        </section>
+
+        <section className="setting setting-about">
+          <div>
+            <h2>Sobre o AquiIoT</h2>
+            <p>
+              Localização indoor por áreas: cada pessoa leva um chaveiro
+              (ESP-01S) e o ESP32 de cada área informa ao servidor quem está
+              por perto. Projeto acadêmico, versão 1.0.
+            </p>
+          </div>
+        </section>
+      </div>
+    </>
   )
 }

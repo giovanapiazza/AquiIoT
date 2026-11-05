@@ -6,6 +6,7 @@ export function useData(interval) {
     dispositivos: [],
     setores: [],
     eventos: [],
+    leituras: [],
     loading: true,
     error: '',
     updated: null,
@@ -17,8 +18,14 @@ export function useData(interval) {
     const controller = new AbortController()
     async function refresh() {
       try {
-        const [dispositivos, setores, eventos] = await Promise.all(
-          ['dispositivos', 'setores', 'eventos'].map((resource) =>
+        // Leituras dos sensores das áreas (temperatura e umidade do DHT11)
+        const [dispositivos, setores, eventos, leituras] = await Promise.all(
+          [
+            'dispositivos',
+            'setores',
+            'eventos',
+            'eventos/sistema?tipo=leitura_setor&limite=100',
+          ].map((resource) =>
             getCollection(
               resource,
               AbortSignal.any([controller.signal, AbortSignal.timeout(8000)]),
@@ -30,6 +37,7 @@ export function useData(interval) {
             dispositivos,
             setores,
             eventos,
+            leituras,
             loading: false,
             error: '',
             updated: new Date(),

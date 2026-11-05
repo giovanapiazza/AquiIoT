@@ -139,8 +139,10 @@ test('setor descoberto pode receber receptor sem duplicar setor nem permitir rec
   assert.equal(repo.listSectors()[0].esp32, 'ESP32-A')
   assert.equal(repo.getDevice('TAG').setor, 'Sala A')
   assert.throws(() => repo.createSector({ nome: 'Sala B', esp32: 'ESP32-A' }), error => error.status === 409)
-  assert.throws(() => repo.createSector({ nome: 'Sala A', esp32: 'ESP32-B' }), error => error.status === 409)
+  // Um segundo receptor na mesma sala é permitido
+  repo.createSector({ nome: 'Sala A', esp32: 'ESP32-B' })
   assert.equal(repo.listSectors().length, 1)
+  assert.deepEqual(repo.listSectors()[0].receptores, ['ESP32-A', 'ESP32-B'])
 })
 
 test('chaves estrangeiras impedem referências inválidas e exclusão do histórico referenciado', t => {
@@ -276,4 +278,29 @@ test('filtros HTTP exigem datas com fuso e paginação limitada', () => {
   ]) assert.throws(() => queryFilters(query), error => error.status === 400)
   assert.deepEqual(sensors({ temperatura: null, luminosidade: null }), { temperatura: null, luminosidade: null })
   assert.throws(() => sensors({ temperatura: Infinity }), error => error.status === 400)
+})
+
+test('migração 004 leva o ESP32 de cada setor para a tabela de receptores', t => {
+  const { DatabaseSync } = require('node:sqlite')
+  const { readFileSync, mkdirSync } = require('node:fs')
+  const directory = mkdtempSync(join(tmpdir(), 'aquiiot-receptores-'))
+  t.after(() => rmSync(directory, { recursive: true, force: true }))
+  const filename = join(directory, 'aquiiot.sqlite')
+  mkdirSync(directory, { recursive: true })
+  // Banco no formato anterior: migrações 001 a 003 e um ESP32 por setor
+  const old = new DatabaseSync(filename)
+  old.exec('CREATE TABLE schema_migrations (versao TEXT PRIMARY KEY, aplicada_em INTEGER NOT NULL) STRICT')
+  for (const version of ['001_initial.sql', '002_identificacao.sql', '003_desconexao.sql']) {
+    old.exec(readFileSync(join(__dirname, '..', 'database', 'migrations', version), 'utf8'))
+    old.prepare('INSERT INTO schema_migrations VALUES (?, ?)').run(version, START)
+  }
+  old.prepare("INSERT INTO setores (nome, codigo, esp32, criado_em) VALUES ('Ala B', '010302', '0103020201', ?)").run(START)
+  old.prepare("INSERT INTO setores (nome, criado_em) VALUES ('Sem receptor', ?)").run(START)
+  old.close()
+
+  const db = openDatabase(filename)
+  t.after(() => db.close())
+  const repo = createRepository(db, { clock: () => START })
+  assert.deepEqual(repo.listSectors().map(s => [s.nome, s.receptores]), [['Ala B', ['0103020201']], ['Sem receptor', []]])
+  assert.equal(db.prepare('SELECT COUNT(*) AS total FROM setores WHERE esp32 IS NOT NULL').get().total, 0)
 })

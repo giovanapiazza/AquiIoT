@@ -11,8 +11,9 @@ const char* SENHA_REDE = "12345678";
 const char* CHAVE_DISPOSITIVO = "MUDE_ESTA_CHAVE_DOS_CHAVEIROS";
 const char* URL_PRESENCA = "http://192.168.4.1/presenca";
 
-// O setor exige exatamente 8 digitos
-const char* ID_CHAVEIRO = "00000001";
+// Padrao PPSSAATTNN: o chaveiro so conhece o proprio TTNN (03 = ESP8266, NN =
+// numero do no); o setor acrescenta o PPSSAA da area onde ele foi detectado.
+const char* ID_CHAVEIRO = "0301";
 
 // O setor esquece o chaveiro apos 15 s sem mensagem
 const unsigned long INTERVALO_ENVIO_MS = 5000;
@@ -40,7 +41,7 @@ void enviarPresenca() {
 
   Serial.printf("[PRESENCA] RSSI %d dBm -> HTTP %d: %s\n", rssi, codigo, resposta.c_str());
   if (codigo == 401) Serial.println("  Confira CHAVE_DISPOSITIVO (igual ao esp32_setor.ino).");
-  if (codigo == 400) Serial.println("  Confira ID_CHAVEIRO (8 digitos).");
+  if (codigo == 400) Serial.println("  Confira ID_CHAVEIRO (4 digitos, TTNN).");
 }
 
 void setup() {

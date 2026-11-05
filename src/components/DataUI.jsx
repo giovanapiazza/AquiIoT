@@ -1,48 +1,9 @@
-import { display, signal } from '../utils/format'
 import { useEffect, useRef } from 'react'
-import { X } from 'lucide-react'
+import { Search as SearchIcon, X } from 'lucide-react'
+import { signalLevel, signalWord } from '../utils/format'
 
-export function Status({ value }) {
-  return (
-    <span className="table-status">
-      <span
-        className={`status-dot ${value === 'online' ? 'online' : value === 'offline' ? 'offline' : ''}`}
-      />
-      {value === 'online' ? 'Online' : value === 'offline' ? 'Offline' : '—'}
-    </span>
-  )
-}
-export function Search({ value, onChange, label }) {
-  return (
-    <label className="filter-field">
-      <span>{label}</span>
-      <input
-        type="search"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={label}
-      />
-    </label>
-  )
-}
-export function SectorFilter({ values, value, onChange }) {
-  return (
-    <label className="filter-field">
-      <span>Setor</span>
-      <select
-        aria-label="Setor"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        <option value="">Todos os setores</option>
-        {values.map((item) => (
-          <option key={item}>{item}</option>
-        ))}
-      </select>
-    </label>
-  )
-}
-export function Modal({ title, children, onClose }) {
+// Janela modal. `side` abre como painel lateral (detalhes de um item).
+export function Modal({ title, subtitle, children, onClose, side = false }) {
   const ref = useRef(null)
   useEffect(() => {
     const previous = document.activeElement
@@ -56,83 +17,121 @@ export function Modal({ title, children, onClose }) {
   return (
     <dialog
       ref={ref}
-      className="detail-dialog"
-      onCancel={onClose}
+      className={side ? 'dialog dialog-side' : 'dialog'}
+      onCancel={(e) => {
+        // Quem fecha é o React (desmontando); assim o onClose pode recusar
+        e.preventDefault()
+        onClose()
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
       aria-labelledby="dialog-title"
     >
-      <div className="dialog-heading">
-        <h2 id="dialog-title">{title}</h2>
-        <button className="icon-button" onClick={onClose} aria-label="Fechar">
-          <X size={18} />
-        </button>
+      <div className="dialog-body">
+        <header className="dialog-heading">
+          <div>
+            <h2 id="dialog-title">{title}</h2>
+            {subtitle && <p>{subtitle}</p>}
+          </div>
+          <button className="icon-button" onClick={onClose} aria-label="Fechar">
+            <X size={20} />
+          </button>
+        </header>
+        {children}
       </div>
-      {children}
     </dialog>
   )
 }
-export function Details({ data }) {
+
+// Rótulo e valor; esconde campos vazios
+export function Fields({ items }) {
   return (
-    <dl className="details-list">
-      {Object.entries(data).map(([key, value]) => (
-        <div key={key}>
-          <dt>{key}</dt>
-          <dd>
-            {display(
-              typeof value === 'object' && value !== null
-                ? JSON.stringify(value)
-                : value,
-            )}
-          </dd>
-        </div>
-      ))}
+    <dl className="fields">
+      {items
+        .filter(([, value]) => value || value === 0)
+        .map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
     </dl>
   )
 }
-export function DeviceTable({ devices, onSelect }) {
+
+export function Presence({ online, children }) {
   return (
-    <div className="table-scroll">
-      <table className="data-table">
-        <thead>
-          <tr>
-            {[
-              'Dispositivo',
-              'Setor atual',
-              'Status',
-              'RSSI',
-              'Última atualização',
-            ].map((title) => (
-              <th key={title}>{title}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {devices.map((device) => (
-            <tr key={device.id}>
-              <td>
-                <button
-                  className="text-button"
-                  onClick={() => onSelect(device)}
-                >
-                  {device.nome || device.id}
-                </button>
-                {device.nome && <small>{device.id}</small>}
-              </td>
-              <td>{display(device.setor)}</td>
-              <td>
-                <Status value={device.status} />
-              </td>
-              <td>{signal(device.rssi)}</td>
-              <td>{display(device.ultimaAtualizacao)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {!devices.length && (
-        <p className="table-empty">Nenhum dispositivo encontrado.</p>
-      )}
+    <span className={`presence ${online ? 'is-here' : 'is-away'}`}>
+      <span className="presence-dot" aria-hidden="true" />
+      {children ?? (online ? 'Presente' : 'Fora de alcance')}
+    </span>
+  )
+}
+
+export function SignalBars({ rssi }) {
+  const level = signalLevel(rssi)
+  const label =
+    rssi == null ? 'Sinal sem leitura' : `Sinal ${signalWord[level]}, ${rssi} dBm`
+  return (
+    <span className="signal" data-level={level} role="img" aria-label={label} title={label}>
+      <i />
+      <i />
+      <i />
+    </span>
+  )
+}
+
+export function Search({ value, onChange, label, placeholder }) {
+  return (
+    <label className="search">
+      <span className="visually-hidden">{label}</span>
+      <SearchIcon size={16} aria-hidden="true" />
+      <input
+        type="search"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder || label}
+      />
+    </label>
+  )
+}
+
+// Escolha única entre poucas opções, sempre visíveis
+export function Segmented({ label, value, onChange, options }) {
+  return (
+    <div className="segmented" role="radiogroup" aria-label={label}>
+      {options.map(([id, text]) => (
+        <button
+          key={id}
+          type="button"
+          role="radio"
+          aria-checked={value === id}
+          onClick={() => onChange(id)}
+        >
+          {text}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export function SelectField({ label, value, onChange, children }) {
+  return (
+    <label className="field field-inline">
+      <span>{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        {children}
+      </select>
+    </label>
+  )
+}
+
+export function Empty({ title, children }) {
+  return (
+    <div className="empty">
+      <strong>{title}</strong>
+      {children && <p>{children}</p>}
     </div>
   )
 }
