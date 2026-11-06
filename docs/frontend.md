@@ -66,8 +66,9 @@ O botão **Adicionar setor** (Visão geral, Dispositivos e Setores) grava o
 ESP32 de setor de [`esp32/setor_configuravel/`](../esp32/setor_configuravel/README.md) pela
 Web Serial, com as mesmas abas Básica (listas de planta, setor, área e número)
 e Avançada (todos os campos). Os `.bin` dos dois botões são gerados por
-`scripts/gerar_firmwares.sh`; o do setor fica fora do Git porque leva a senha
-da rede de `esp32/setor_configuravel/segredos.h`.
+`scripts/gerar_firmwares.sh` e versionados em `servidor/front/public/firmware/`,
+para o servidor recebê-los com `git pull`. O do setor leva a rede, a senha e o
+backend de `esp32/setor_configuravel/segredos.h`: recompile e faça commit ao trocá-los.
 
 ## Alertas e exclusão
 

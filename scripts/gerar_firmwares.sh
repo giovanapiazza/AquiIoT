@@ -1,8 +1,8 @@
 #!/bin/sh
 # Compila os firmwares configuráveis e publica em servidor/front/public/firmware/,
 # que a interface grava pela Web Serial ("Gravar chaveiro" e "Adicionar área").
-# O firmware do setor leva a rede e o backend de esp32/setor_configuravel/segredos.h,
-# por isso servidor/front/public/firmware/setor/ fica fora do Git.
+# O firmware do setor leva a rede (com a senha) e o backend de
+# esp32/setor_configuravel/segredos.h; os .bin vão ao Git para o servidor baixá-los.
 set -eu
 cd "$(dirname "$0")/.."
 PUBLICO=servidor/front/public/firmware

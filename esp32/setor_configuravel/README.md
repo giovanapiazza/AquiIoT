@@ -19,7 +19,7 @@ Depois de gravar, a interface já cadastra a área no banco.
 ## Padrões e geração do `.bin`
 
 A rede com internet e o backend padrão vêm de `segredos.h` (copie de
-`segredos.exemplo.h`; fica fora do Git). O backend padrão é o **servidor**
+`segredos.exemplo.h`; vai ao Git). O backend padrão é o **servidor**
 (Raspberry Pi, `https://raspberrypi.<tailnet>.ts.net`), onde fica o banco do
 AquiIoT; enquanto `URL_BACKEND` tiver `SEU_TAILNET`, o ESP32 não envia nada, a
 interface recusa gravar pela aba Básica e o script de geração avisa. Depois de mudar o `.ino` ou o
@@ -30,5 +30,6 @@ scripts/gerar_firmwares.sh
 ```
 
 O script compila este firmware e o do chaveiro e publica em `servidor/front/public/firmware/`.
-Como o firmware do setor leva a senha da rede, `servidor/front/public/firmware/setor/` fica
-fora do Git: em outra máquina, rode o script antes de usar o botão.
+Os `.bin` gerados (inclusive `servidor/front/public/firmware/setor/`, que leva
+a senha da rede) vão ao Git: faça commit depois de rodar o script e use
+`git pull` no servidor para recebê-los.

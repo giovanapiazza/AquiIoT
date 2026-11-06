@@ -66,7 +66,7 @@ export default function Settings({ interval, onIntervalChange, theme, onThemeCha
         <section className="setting">
           <div>
             <h2>Servidor</h2>
-            <p className="server-address">{API_URL}</p>
+            <p className="server-address">{API_URL || window.location.origin}</p>
             <p
               role="status"
               className={`server-state is-${connection}`}

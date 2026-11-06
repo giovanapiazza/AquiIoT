@@ -1,6 +1,6 @@
-export const API_URL = (
-  import.meta.env.VITE_API_URL || 'http://localhost:3000'
-).replace(/\/$/, '')
+// Sem VITE_API_URL a API é a da própria página: o Vite repassa /api ao backend
+// (vite.config.js), inclusive na Raspberry pelo Tailscale Funnel
+export const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 
 export async function getCollection(resource, signal) {
   const response = await fetch(`${API_URL}/api/${resource}`, {
