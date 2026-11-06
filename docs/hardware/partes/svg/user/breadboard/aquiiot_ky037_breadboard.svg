@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" width="0.6000in" height="1.4500in" viewBox="0 0 600.0 1450.0">
+<g id="breadboard">
+<rect x="0" y="0" width="600" height="1250" rx="30" fill="#1a1a1a"/>
+<circle cx="300" cy="250" r="240" fill="#c0c0c0" stroke="#888" stroke-width="10"/>
+<circle cx="300" cy="250" r="170" fill="#2a2a2a"/>
+<rect x="170" y="520" width="260" height="260" rx="10" fill="#1f5fbf"/><circle cx="300" cy="650" r="70" fill="#d8b04a"/>
+<path d="M260 650 h80 M300 610 v80" stroke="#6b5420" stroke-width="16"/>
+<rect x="200" y="840" width="200" height="120" fill="#111"/>
+<text x="300.0" y="1040.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#ffffff" text-anchor="middle" font-weight="bold">KY-037</text>
+<rect x="138" y="1160" width="24" height="230" fill="#b9b9b9"/>
+<rect id="connector0pin" x="132" y="1380" width="36" height="36" fill="#c9a94a"/>
+<rect x="238" y="1160" width="24" height="230" fill="#b9b9b9"/>
+<rect id="connector1pin" x="232" y="1380" width="36" height="36" fill="#c9a94a"/>
+<rect x="338" y="1160" width="24" height="230" fill="#b9b9b9"/>
+<rect id="connector2pin" x="332" y="1380" width="36" height="36" fill="#c9a94a"/>
+<rect x="438" y="1160" width="24" height="230" fill="#b9b9b9"/>
+<rect id="connector3pin" x="432" y="1380" width="36" height="36" fill="#c9a94a"/>
+<text x="150.0" y="1140.0" font-family="'Droid Sans', Arial, sans-serif" font-size="42" fill="#ffffff" text-anchor="middle" font-weight="normal">AO</text>
+<text x="250.0" y="1140.0" font-family="'Droid Sans', Arial, sans-serif" font-size="42" fill="#ffffff" text-anchor="middle" font-weight="normal">G</text>
+<text x="350.0" y="1140.0" font-family="'Droid Sans', Arial, sans-serif" font-size="42" fill="#ffffff" text-anchor="middle" font-weight="normal">+</text>
+<text x="450.0" y="1140.0" font-family="'Droid Sans', Arial, sans-serif" font-size="42" fill="#ffffff" text-anchor="middle" font-weight="normal">DO</text>
+</g>
+</svg>

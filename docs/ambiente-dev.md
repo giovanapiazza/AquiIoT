@@ -6,10 +6,10 @@ montado dos diretórios do repositório, então as edições têm efeito na hora
 
 | Serviço | Endereço | Recarregamento |
 |---|---|---|
-| `web` (Vite) | <http://localhost:5173> | HMR: a página atualiza ao salvar arquivos de `src/`. |
+| `web` (Vite) | <http://localhost:5173> | HMR: a página atualiza ao salvar arquivos de `servidor/front/src/`. |
 | `api` (Express + SQLite) | <http://localhost:3000> | `node --watch` reinicia o servidor ao salvar arquivos `.js` do backend. |
 
-Alterações em `backend/database/migrations/*.sql` não reiniciam a API; use
+Alterações em `servidor/banco/migrations/*.sql` não reiniciam a API; use
 `docker compose restart api` depois de adicionar uma migração.
 
 ## Subir e parar
@@ -43,7 +43,7 @@ reinstalar.
 
 O SQLite fica no volume `aquiiot_data`, em `/data/aquiiot.sqlite` dentro do
 contêiner da API. Ele sobrevive a `down`/`up` e não se mistura com
-`backend/data/` da máquina nem com o banco da Raspberry Pi. O banco começa vazio;
+`servidor/banco/data/` da máquina nem com o banco da Raspberry Pi. O banco começa vazio;
 para gerar dados de teste, use os exemplos `curl` de [database.md](database.md).
 
 ```bash
@@ -63,8 +63,14 @@ As variáveis do backend (`OFFLINE_AFTER_MS` etc.) estão no serviço `api` do
 `compose.yaml`. A interface aponta para a API em `http://localhost:3000` pela
 variável `VITE_API_URL` do serviço `web`.
 
-## Testar com ESP32 de verdade
+## ESP32 e o banco de desenvolvimento
 
-A porta 3000 é publicada em todas as interfaces da máquina. Um ESP32 na mesma
-rede pode enviar para `http://<IP-da-sua-máquina>:3000` no lugar do IP da
-Raspberry Pi, desde que o firewall permita a porta.
+Os firmwares dos ESP32 enviam por padrão ao **backend do servidor** (Raspberry
+Pi), configurado em `URL_BACKEND` no `segredos.h` de cada firmware. Este banco
+de desenvolvimento não recebe nada dos dispositivos.
+
+Só para depurar a API, dá para apontar temporariamente um ESP32 para
+`http://<IP-da-sua-máquina>:3000` (a porta 3000 é publicada em todas as
+interfaces; o firewall precisa permitir). Volte para o endereço do servidor
+antes de instalar o ESP32: o que ele enviar nesse meio-tempo fica só neste
+banco.

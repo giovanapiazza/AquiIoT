@@ -24,15 +24,16 @@ dist-ssr
 *.sw?
 
 # Dados persistentes SQLite e backups locais
-backend/data/
+servidor/banco/data/
 *.sqlite
 *.sqlite-*
 *.db
 *.db-*
 
-# Firmware do setor com a rede de setor_configuravel/segredos.h
-public/firmware/setor/
+# Firmware do setor com a rede de esp32/setor_configuravel/segredos.h
+servidor/front/public/firmware/setor/
 
 # Binários exportados pelo Arduino IDE ("Exportar binário compilado") dentro
 # das pastas dos firmwares: embutem as redes e senhas de segredos.h
-/*/build/
+/esp32/*/build/
+/esp8266/*/build/

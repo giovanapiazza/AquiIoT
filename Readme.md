@@ -406,36 +406,27 @@ Nesta Sprint serão realizadas as correções finais, organização do código, 
 
 # 📁 Organização do repositório
 
-A estrutura abaixo representa a organização inicialmente planejada:
-
 ```text
 AquiIoT/
-│
-├── firmware/
-│   ├── chaveiro/
-│   └── esp32_setor/
-│
-├── raspberry/
-│   ├── backend/
-│   ├── database/
-│   └── speaker/
-│
-├── interface/
-│
-├── docs/
-│   ├── diagramas/
-│   ├── testes/
-│   └── resultados/
-│
-├── hardware/
-│   ├── esquemas/
-│   └── componentes/
-│
-├── README.md
-└── LICENSE
+├── esp32/                         firmwares do ponto fixo de cada área
+│   ├── esp32_setor/               firmware original (constantes no .ino)
+│   ├── setor_configuravel/        gravado pela interface ("Adicionar área")
+│   └── esp32_teste_local/         bancada de testes com um ESP32
+├── esp8266/                       firmwares do chaveiro
+│   ├── esp8266_chaveiro/          firmware original (constantes no .ino)
+│   └── chaveiro_configuravel/     gravado pela interface ("Gravar chaveiro")
+├── servidor/                      tudo que roda na Raspberry Pi
+│   ├── banco/                     SQLite: conexão, migrações, init e backup
+│   ├── servidor/                  API Express (rotas, regras, testes)
+│   └── front/                     interface React + Vite
+├── docs/                          documentação e fontes dos PDFs
+├── scripts/                       gerar_firmwares.sh
+└── compose.yaml                   ambiente de desenvolvimento (API + front)
 ```
 
-A estrutura poderá ser modificada conforme o projeto evoluir.
+Cada pasta de firmware tem o mesmo nome do `.ino`, como exige o Arduino. Os
+ESP32 enviam os dados ao backend do servidor (Raspberry Pi), configurado em
+`segredos.h`; o chaveiro ESP8266 fala só com o ESP32 da área.
 
 ---
 

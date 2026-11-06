@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module fritzingVersion="1.0.8" moduleId="AquiIoT_dht11_v1">
+  <version>1</version>
+  <title>DHT11 (4 pinos)</title>
+  <label>U</label>
+  <date>2026-11-06</date>
+  <author>AquiIoT (UNIPAMPA)</author>
+  <tags>
+    <tag>DHT11</tag>
+    <tag>temperatura</tag>
+    <tag>umidade</tag>
+    <tag>AquiIoT</tag>
+  </tags>
+  <properties>
+    <property name="family">temperature &amp; humidity sensor</property>
+    <property name="sensor">DHT11</property>
+    <property name="faixa">0–50 °C, 20–90 %UR</property>
+  </properties>
+  <description>Sensor DHT11 de temperatura e umidade, componente avulso de 4 pinos (passo 0,1"). O pino de dados precisa de resistor de pull-up (10 kΩ para VCC). Peça criada para o projeto AquiIoT.</description>
+  <views>
+    <iconView><layers image="icon/aquiiot_dht11_icon.svg"><layer layerId="icon"/></layers></iconView>
+    <breadboardView><layers image="breadboard/aquiiot_dht11_breadboard.svg"><layer layerId="breadboard"/></layers></breadboardView>
+    <schematicView><layers image="schematic/aquiiot_dht11_schematic.svg"><layer layerId="schematic"/></layers></schematicView>
+    <pcbView><layers image="pcb/aquiiot_dht11_pcb.svg"><layer layerId="copper0"/><layer layerId="silkscreen"/><layer layerId="copper1"/></layers></pcbView>
+  </views>
+  <connectors>
+    <connector id="connector0" name="VCC" type="male">
+      <description>Alimentação 3,3 a 5,5 V</description>
+      <views>
+        <breadboardView><p layer="breadboard" svgId="connector0pin"/></breadboardView>
+        <schematicView><p layer="schematic" svgId="connector0pin" terminalId="connector0terminal"/></schematicView>
+        <pcbView><p layer="copper0" svgId="connector0pad"/><p layer="copper1" svgId="connector0pad"/></pcbView>
+      </views>
+    </connector>
+    <connector id="connector1" name="DATA" type="male">
+      <description>Dados (um fio), precisa de pull-up de 10 kΩ</description>
+      <views>
+        <breadboardView><p layer="breadboard" svgId="connector1pin"/></breadboardView>
+        <schematicView><p layer="schematic" svgId="connector1pin" terminalId="connector1terminal"/></schematicView>
+        <pcbView><p layer="copper0" svgId="connector1pad"/><p layer="copper1" svgId="connector1pad"/></pcbView>
+      </views>
+    </connector>
+    <connector id="connector2" name="NC" type="male">
+      <description>Não conectado</description>
+      <views>
+        <breadboardView><p layer="breadboard" svgId="connector2pin"/></breadboardView>
+        <schematicView><p layer="schematic" svgId="connector2pin" terminalId="connector2terminal"/></schematicView>
+        <pcbView><p layer="copper0" svgId="connector2pad"/><p layer="copper1" svgId="connector2pad"/></pcbView>
+      </views>
+    </connector>
+    <connector id="connector3" name="GND" type="male">
+      <description>Terra</description>
+      <views>
+        <breadboardView><p layer="breadboard" svgId="connector3pin"/></breadboardView>
+        <schematicView><p layer="schematic" svgId="connector3pin" terminalId="connector3terminal"/></schematicView>
+        <pcbView><p layer="copper0" svgId="connector3pad"/><p layer="copper1" svgId="connector3pad"/></pcbView>
+      </views>
+    </connector>
+  </connectors>
+</module>

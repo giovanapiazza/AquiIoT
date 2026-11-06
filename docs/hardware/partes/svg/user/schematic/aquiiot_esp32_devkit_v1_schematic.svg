@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" width="1.4000in" height="1.7000in" viewBox="0 0 1400.0 1700.0">
+<g id="schematic">
+<rect x="100" y="100" width="1200" height="1600" fill="#ffffff" stroke="#000000" stroke-width="10"/>
+<text x="700.0" y="75.0" font-family="'Droid Sans', Arial, sans-serif" font-size="70" fill="#000000" text-anchor="middle" font-weight="bold">ESP32 DevKit V1</text>
+<line id="connector0pin" x1="100" y1="200" x2="0" y2="200" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector0terminal" x="-5" y="195" width="10" height="10" fill="none" stroke="none"/>
+<text x="120.0" y="221.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="start" font-weight="normal">EN</text>
+<line id="connector1pin" x1="100" y1="300" x2="0" y2="300" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector1terminal" x="-5" y="295" width="10" height="10" fill="none" stroke="none"/>
+<text x="120.0" y="321.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="start" font-weight="normal">GPIO36</text>
+<line id="connector2pin" x1="100" y1="400" x2="0" y2="400" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector2terminal" x="-5" y="395" width="10" height="10" fill="none" stroke="none"/>
+<text x="120.0" y="421.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="start" font-weight="normal">GPIO39</text>
+<line id="connector3pin" x1="100" y1="500" x2="0" y2="500" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector3terminal" x="-5" y="495" width="10" height="10" fill="none" stroke="none"/>
+<text x="120.0" y="521.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="start" font-weight="normal">GPIO34</text>
+<line id="connector4pin" x1="100" y1="600" x2="0" y2="600" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector4terminal" x="-5" y="595" width="10" height="10" fill="none" stroke="none"/>
+<text x="120.0" y="621.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="start" font-weight="normal">GPIO35</text>
+<line id="connector5pin" x1="100" y1="700" x2="0" y2="700" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector5terminal" x="-5" y="695" width="10" height="10" fill="none" stroke="none"/>
+<text x="120.0" y="721.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="start" font-weight="normal">GPIO32</text>
+<line id="connector6pin" x1="100" y1="800" x2="0" y2="800" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector6terminal" x="-5" y="795" width="10" height="10" fill="none" stroke="none"/>
+<text x="120.0" y="821.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="start" font-weight="normal">GPIO33</text>
+<line id="connector7pin" x1="100" y1="900" x2="0" y2="900" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector7terminal" x="-5" y="895" width="10" height="10" fill="none" stroke="none"/>
+<text x="120.0" y="921.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="start" font-weight="normal">GPIO25</text>
+<line id="connector8pin" x1="100" y1="1000" x2="0" y2="1000" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector8terminal" x="-5" y="995" width="10" height="10" fill="none" stroke="none"/>
+<text x="120.0" y="1021.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="start" font-weight="normal">GPIO26</text>
+<line id="connector9pin" x1="100" y1="1100" x2="0" y2="1100" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector9terminal" x="-5" y="1095" width="10" height="10" fill="none" stroke="none"/>
+<text x="120.0" y="1121.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="start" font-weight="normal">GPIO27</text>
+<line id="connector10pin" x1="100" y1="1200" x2="0" y2="1200" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector10terminal" x="-5" y="1195" width="10" height="10" fill="none" stroke="none"/>
+<text x="120.0" y="1221.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="start" font-weight="normal">GPIO14</text>
+<line id="connector11pin" x1="100" y1="1300" x2="0" y2="1300" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector11terminal" x="-5" y="1295" width="10" height="10" fill="none" stroke="none"/>
+<text x="120.0" y="1321.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="start" font-weight="normal">GPIO12</text>
+<line id="connector12pin" x1="100" y1="1400" x2="0" y2="1400" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector12terminal" x="-5" y="1395" width="10" height="10" fill="none" stroke="none"/>
+<text x="120.0" y="1421.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="start" font-weight="normal">GPIO13</text>
+<line id="connector13pin" x1="100" y1="1500" x2="0" y2="1500" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector13terminal" x="-5" y="1495" width="10" height="10" fill="none" stroke="none"/>
+<text x="120.0" y="1521.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="start" font-weight="normal">GND</text>
+<line id="connector14pin" x1="100" y1="1600" x2="0" y2="1600" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector14terminal" x="-5" y="1595" width="10" height="10" fill="none" stroke="none"/>
+<text x="120.0" y="1621.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="start" font-weight="normal">VIN</text>
+<line id="connector15pin" x1="1300" y1="200" x2="1400" y2="200" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector15terminal" x="1395" y="195" width="10" height="10" fill="none" stroke="none"/>
+<text x="1280.0" y="221.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="end" font-weight="normal">GPIO23</text>
+<line id="connector16pin" x1="1300" y1="300" x2="1400" y2="300" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector16terminal" x="1395" y="295" width="10" height="10" fill="none" stroke="none"/>
+<text x="1280.0" y="321.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="end" font-weight="normal">GPIO22</text>
+<line id="connector17pin" x1="1300" y1="400" x2="1400" y2="400" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector17terminal" x="1395" y="395" width="10" height="10" fill="none" stroke="none"/>
+<text x="1280.0" y="421.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="end" font-weight="normal">GPIO1 (TX0)</text>
+<line id="connector18pin" x1="1300" y1="500" x2="1400" y2="500" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector18terminal" x="1395" y="495" width="10" height="10" fill="none" stroke="none"/>
+<text x="1280.0" y="521.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="end" font-weight="normal">GPIO3 (RX0)</text>
+<line id="connector19pin" x1="1300" y1="600" x2="1400" y2="600" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector19terminal" x="1395" y="595" width="10" height="10" fill="none" stroke="none"/>
+<text x="1280.0" y="621.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="end" font-weight="normal">GPIO21</text>
+<line id="connector20pin" x1="1300" y1="700" x2="1400" y2="700" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector20terminal" x="1395" y="695" width="10" height="10" fill="none" stroke="none"/>
+<text x="1280.0" y="721.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="end" font-weight="normal">GPIO19</text>
+<line id="connector21pin" x1="1300" y1="800" x2="1400" y2="800" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector21terminal" x="1395" y="795" width="10" height="10" fill="none" stroke="none"/>
+<text x="1280.0" y="821.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="end" font-weight="normal">GPIO18</text>
+<line id="connector22pin" x1="1300" y1="900" x2="1400" y2="900" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector22terminal" x="1395" y="895" width="10" height="10" fill="none" stroke="none"/>
+<text x="1280.0" y="921.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="end" font-weight="normal">GPIO5</text>
+<line id="connector23pin" x1="1300" y1="1000" x2="1400" y2="1000" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector23terminal" x="1395" y="995" width="10" height="10" fill="none" stroke="none"/>
+<text x="1280.0" y="1021.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="end" font-weight="normal">GPIO17 (TX2)</text>
+<line id="connector24pin" x1="1300" y1="1100" x2="1400" y2="1100" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector24terminal" x="1395" y="1095" width="10" height="10" fill="none" stroke="none"/>
+<text x="1280.0" y="1121.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="end" font-weight="normal">GPIO16 (RX2)</text>
+<line id="connector25pin" x1="1300" y1="1200" x2="1400" y2="1200" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector25terminal" x="1395" y="1195" width="10" height="10" fill="none" stroke="none"/>
+<text x="1280.0" y="1221.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="end" font-weight="normal">GPIO4</text>
+<line id="connector26pin" x1="1300" y1="1300" x2="1400" y2="1300" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector26terminal" x="1395" y="1295" width="10" height="10" fill="none" stroke="none"/>
+<text x="1280.0" y="1321.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="end" font-weight="normal">GPIO2</text>
+<line id="connector27pin" x1="1300" y1="1400" x2="1400" y2="1400" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector27terminal" x="1395" y="1395" width="10" height="10" fill="none" stroke="none"/>
+<text x="1280.0" y="1421.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="end" font-weight="normal">GPIO15</text>
+<line id="connector28pin" x1="1300" y1="1500" x2="1400" y2="1500" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector28terminal" x="1395" y="1495" width="10" height="10" fill="none" stroke="none"/>
+<text x="1280.0" y="1521.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="end" font-weight="normal">GND</text>
+<line id="connector29pin" x1="1300" y1="1600" x2="1400" y2="1600" stroke="#000000" stroke-width="10" stroke-linecap="round"/>
+<rect id="connector29terminal" x="1395" y="1595" width="10" height="10" fill="none" stroke="none"/>
+<text x="1280.0" y="1621.0" font-family="'Droid Sans', Arial, sans-serif" font-size="60" fill="#000000" text-anchor="end" font-weight="normal">3V3</text>
+</g>
+</svg>

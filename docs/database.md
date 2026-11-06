@@ -10,16 +10,16 @@ Execute a partir da raiz do repositório:
 
 ```bash
 node --version
-npm --prefix backend ci
-npm --prefix backend run db:init
-npm --prefix backend start
+npm --prefix servidor/servidor ci
+npm --prefix servidor/servidor run db:init
+npm --prefix servidor/servidor start
 ```
 
-`db:init` é opcional: a inicialização do servidor também cria o diretório, abre o banco e aplica as migrações pendentes. A interface é executada separadamente com `npm run dev`, conforme [frontend.md](frontend.md).
+`db:init` é opcional: a inicialização do servidor também cria o diretório, abre o banco e aplica as migrações pendentes. A interface é executada separadamente com `npm --prefix servidor/front run dev`, conforme [frontend.md](frontend.md).
 
 | Variável do backend | Padrão | Finalidade |
 |---|---|---|
-| `DATABASE_PATH` | `backend/data/aquiiot.sqlite` | Arquivo SQLite; prefira um caminho absoluto na Raspberry Pi. |
+| `DATABASE_PATH` | `servidor/banco/data/aquiiot.sqlite` | Arquivo SQLite; prefira um caminho absoluto na Raspberry Pi. |
 | `PORT` | `3000` | Porta HTTP, de 1 a 65535. |
 | `HOST` | `0.0.0.0` | Endereço de escuta do servidor. |
 | `OFFLINE_AFTER_MS` | `120000` | Intervalo sem detecção para considerar um dispositivo offline, em milissegundos; inteiro positivo. |
@@ -31,14 +31,14 @@ export DATABASE_PATH=/home/pi/aquiiot-data/aquiiot.sqlite
 export PORT=3000
 export HOST=0.0.0.0
 export OFFLINE_AFTER_MS=120000
-npm --prefix backend start
+npm --prefix servidor/servidor start
 ```
 
 O usuário do serviço precisa de permissão de escrita no diretório do banco, incluindo os arquivos auxiliares SQLite. Use armazenamento local persistente. Configure o relógio da Raspberry Pi, pois ele é a referência temporal dos registros. 
 
 ## Modelo de dados
 
-O esquema está em [`backend/database/migrations/001_initial.sql`](../backend/database/migrations/001_initial.sql).
+O esquema está em [`servidor/banco/migrations/001_initial.sql`](../servidor/banco/migrations/001_initial.sql).
 
 ```mermaid
 erDiagram
@@ -121,7 +121,7 @@ O contrato dos sensores é **temperatura em °C** e **luminosidade em lux**, amb
 
 ## Persistência, migrações e backup
 
-`backend/database/index.js` aplica os arquivos `.sql` em ordem, registrando cada versão em `schema_migrations` com seu horário. Cada migração é executada em transação. Não edite uma migração já aplicada: adicione um novo arquivo numerado para alterar o esquema. Um banco com versão desconhecida pelo código é recusado para evitar abertura por uma versão incompatível do backend.
+`servidor/banco/index.js` aplica os arquivos `.sql` em ordem, registrando cada versão em `schema_migrations` com seu horário. Cada migração é executada em transação. Não edite uma migração já aplicada: adicione um novo arquivo numerado para alterar o esquema. Um banco com versão desconhecida pelo código é recusado para evitar abertura por uma versão incompatível do backend.
 
 O banco usa chaves estrangeiras habilitadas, `busy_timeout=5000`, journal **WAL** e `synchronous=FULL`. Operações que gravam localização, evento e sensores são atômicas: falhas revertem a operação inteira. Reiniciar o servidor preserva os registros; os antigos exemplos em memória não são importados.
 
@@ -129,7 +129,7 @@ Para criar uma cópia consistente, inclusive com o servidor em execução, use a
 
 ```bash
 export DATABASE_PATH=/home/pi/aquiiot-data/aquiiot.sqlite
-npm --prefix backend run db:backup -- /home/pi/backups/aquiiot-2026-10-23.sqlite
+npm --prefix servidor/servidor run db:backup -- /home/pi/backups/aquiiot-2026-10-23.sqlite
 ```
 
 O destino deve ser um arquivo novo; o comando não sobrescreve backups anteriores. Não copie somente o arquivo principal enquanto o servidor estiver gravando, pois transações podem estar no arquivo `-wal`.
@@ -157,12 +157,20 @@ As respostas de listagem permanecem arrays JSON. Erros usam `{ "erro": "mensagem
 | `GET /api/eventos` | Histórico de localização: eventos de detecção e movimentação, compatível com a interface. |
 | `GET /api/eventos/sistema` | Todos os eventos, incluindo leituras e eventos gerais. |
 | `POST /api/eventos` | Registrar evento geral, com contexto opcional. |
+| `DELETE /api/dispositivos/:id` | Excluir o chaveiro com detecções, leituras, eventos e alertas dele. |
+| `DELETE /api/setores/:id` | Excluir a área com receptores, detecções, eventos, regras e alertas dela. |
+| `GET /api/alertas/regras` | Regras de alerta por limite de sensor. |
+| `POST /api/alertas/regras` | Criar regra: `sensor`, `operador` (`maior`/`menor`), `limite`, `setorId` (opcional, `null` = todas as áreas), `nivel` (`aviso`/`erro`), `ativa`, `descricao`. |
+| `PUT /api/alertas/regras/:id` | Editar regra; campos ausentes mantêm o valor. Encerra os alertas abertos dela. |
+| `DELETE /api/alertas/regras/:id` | Excluir regra e os alertas dela. |
+| `GET /api/alertas` | Alertas abertos; `?estado=todos` inclui os encerrados. `limite` como nas listagens. |
+| `POST /api/alertas/:id/reconhecer` | Marcar o alerta como visto; ele continua aberto até a leitura voltar ao limite. |
 
-`POST /api/localizacao` preserva os campos `dispositivo`, `setor` e `rssi` do contrato anterior; sensores são opcionais. Não existe cadastro manual de dispositivos nem remoção/edição de históricos pela API. Dispositivos aparecem com a primeira detecção real.
+`POST /api/localizacao` preserva os campos `dispositivo`, `setor` e `rssi` do contrato anterior; sensores são opcionais. Históricos não são editados pela API; só são apagados junto com o chaveiro ou a área a que pertencem. Dispositivos aparecem com a primeira detecção real.
 
 Uma detecção inicial gera `deteccao` com origem `null`. Novas detecções no mesmo setor também geram `deteccao`, e a origem disponível é o setor observado anteriormente. Uma mudança de setor gera `movimentacao` com origem e destino. Todas as detecções são preservadas. RSSI ausente permanece `null` e deve aparecer como `—` na interface.
 
-Leituras enviadas separadamente geram `leitura_ambiental` em `/api/eventos/sistema`; sensores enviados junto à localização pertencem ao evento da detecção. `deteccao`, `movimentacao` e `leitura_ambiental` são tipos reservados às rotas correspondentes e não podem ser enviados por `POST /api/eventos`. Eventos gerais aceitam `tipo`, `mensagem`, `nivel` (`info`, `aviso` ou `erro`), `dispositivo`, `setor` e `detalhes` opcionais; dispositivo e setor informados precisam existir. Registrar um alerta não aciona buzzer ou alto-falante.
+Leituras enviadas separadamente geram `leitura_ambiental` em `/api/eventos/sistema`; sensores enviados junto à localização pertencem ao evento da detecção. `deteccao`, `movimentacao`, `leitura_ambiental`, `cadastro`, `saida`, `alerta_sensor`, `alerta_resolvido` e `exclusao` são tipos reservados às rotas correspondentes e não podem ser enviados por `POST /api/eventos`. Eventos gerais aceitam `tipo`, `mensagem`, `nivel` (`info`, `aviso` ou `erro`), `dispositivo`, `setor` e `detalhes` opcionais; dispositivo e setor informados precisam existir. Registrar um alerta não aciona buzzer ou alto-falante.
 
 ### Filtros e paginação
 
@@ -224,6 +232,43 @@ A resposta de últimas leituras preserva a data de cada sensor: uma leitura post
   "luminosidade": { "valor": 315, "data": "2026-10-23T15:30:00.000Z" }
 }
 ```
+
+## Alertas por limite de sensor
+
+A migração `005_alertas.sql` cria `regras_alerta` e `alertas`. Cada leitura
+recebida é comparada com as regras ativas do sensor, da área da leitura ou de
+todas as áreas:
+
+| Sensor | Origem | Unidade |
+|---|---|---|
+| `temperatura` | `leitura_setor` (`temperatura_c`) e leituras dos chaveiros | °C |
+| `umidade` | `leitura_setor` (`umidade_percentual`) | % |
+| `luminosidade_adc` | `leitura_setor` (`luminosidade_adc`) | ADC 0–4095 |
+| `som` | `leitura_setor` (`som_variacao`) | variação do ADC |
+| `luminosidade` | leituras dos chaveiros | lux |
+
+Quando a origem (a área, para `leitura_setor`, ou o chaveiro) passa do limite,
+abre um alerta e um evento `alerta_sensor` com o nível da regra. Enquanto
+continua fora, o mesmo alerta só atualiza `valor_atual`; existe no máximo um
+alerta aberto por regra e origem. A primeira leitura dentro do limite encerra o
+alerta (`resolvido_em`) e gera `alerta_resolvido`. Leitura sem valor (sensor
+com falha) não abre nem encerra. Editar ou desativar uma regra encerra os
+alertas abertos dela. Reconhecer (`reconhecido_em`) só tira o alerta do
+destaque da interface.
+
+## Exclusão de chaveiros e áreas
+
+Como o histórico usa `ON DELETE RESTRICT`, a exclusão é feita numa transação
+que remove antes o que depende do item:
+
+- **Chaveiro:** detecções, leituras, eventos e alertas dele.
+- **Área:** receptores (ESP32), detecções feitas nela, eventos dela e saídas
+  dela, regras e alertas dela. Movimentações dela para outra área continuam,
+  sem a origem; leituras de chaveiros continuam, sem o vínculo com a detecção.
+
+Cada exclusão registra um evento `exclusao`, sem vínculo, com as contagens em
+`detalhes`. Um chaveiro ou ESP32 que continue ligado volta a ser cadastrado na
+próxima detecção.
 
 ## Consultas SQL de referência
 
@@ -310,9 +355,9 @@ LIMIT 100 OFFSET 0;
 ## Validação
 
 ```bash
-npm --prefix backend test
-npm run lint
-npm run build
+npm --prefix servidor/servidor test
+npm --prefix servidor/front run lint
+npm --prefix servidor/front run build
 ```
 
 Os testes usam bases temporárias ou em memória, sem gravar no banco de produção.
@@ -344,7 +389,7 @@ curl -X POST http://localhost:3000/api/localizacao -H 'Content-Type: application
 ```
 
 O backend decodifica o código com o cadastro central de nomes
-([`backend/identificacao.js`](../backend/identificacao.js)): o dispositivo é o
+([`servidor/servidor/identificacao.js`](../servidor/servidor/identificacao.js)): o dispositivo é o
 TTNN (`0301`), que continua o mesmo quando o chaveiro muda de área, e o setor é
 a área PPSSAA (`Hospital · Enfermaria · Ala B`), criada na primeira detecção e
 reconhecida pelo código mesmo se for renomeada. O código completo de cada

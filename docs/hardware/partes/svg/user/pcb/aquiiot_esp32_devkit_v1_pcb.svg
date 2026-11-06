@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" width="1.1000in" height="2.1000in" viewBox="0 0 1100.0 2100.0">
+<g id="silkscreen">
+<rect x="10" y="10" width="1080" height="2080" fill="none" stroke="#ffffff" stroke-width="10"/>
+</g>
+<g id="copper1"><g id="copper0">
+<rect id="connector0pad" x="12.5" y="312.5" width="75" height="75" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector1pad" cx="50" cy="450" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector2pad" cx="50" cy="550" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector3pad" cx="50" cy="650" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector4pad" cx="50" cy="750" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector5pad" cx="50" cy="850" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector6pad" cx="50" cy="950" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector7pad" cx="50" cy="1050" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector8pad" cx="50" cy="1150" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector9pad" cx="50" cy="1250" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector10pad" cx="50" cy="1350" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector11pad" cx="50" cy="1450" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector12pad" cx="50" cy="1550" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector13pad" cx="50" cy="1650" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector14pad" cx="50" cy="1750" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector15pad" cx="1050" cy="350" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector16pad" cx="1050" cy="450" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector17pad" cx="1050" cy="550" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector18pad" cx="1050" cy="650" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector19pad" cx="1050" cy="750" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector20pad" cx="1050" cy="850" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector21pad" cx="1050" cy="950" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector22pad" cx="1050" cy="1050" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector23pad" cx="1050" cy="1150" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector24pad" cx="1050" cy="1250" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector25pad" cx="1050" cy="1350" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector26pad" cx="1050" cy="1450" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector27pad" cx="1050" cy="1550" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector28pad" cx="1050" cy="1650" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+<circle id="connector29pad" cx="1050" cy="1750" r="27.5" fill="none" stroke="#F7BD13" stroke-width="20"/>
+</g></g>
+</svg>

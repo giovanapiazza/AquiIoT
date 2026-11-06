@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" width="3.1000in" height="1.0000in" viewBox="0 0 3100.0 1000.0">
+<g id="icon">
+<rect x="0" y="100" width="2800" height="800" rx="60" fill="#1b1b1b"/>
+<rect x="120" y="190" width="2560" height="620" rx="80" fill="#1e88e5"/>
+<rect x="2560" y="330" width="140" height="340" rx="30" fill="#cfd8dc"/>
+<text x="1350.0" y="470.0" font-family="'Droid Sans', Arial, sans-serif" font-size="220" fill="#ffffff" text-anchor="middle" font-weight="bold">18650</text>
+<text x="1350.0" y="680.0" font-family="'Droid Sans', Arial, sans-serif" font-size="150" fill="#ffffff" text-anchor="middle" font-weight="normal">Li-ion 3,7 V</text>
+<text x="2450.0" y="560.0" font-family="'Droid Sans', Arial, sans-serif" font-size="260" fill="#ffffff" text-anchor="middle" font-weight="bold">+</text>
+<text x="260.0" y="560.0" font-family="'Droid Sans', Arial, sans-serif" font-size="260" fill="#ffffff" text-anchor="middle" font-weight="bold">−</text>
+<path d="M2780 300 C2950 300 2950 200 3050 200" fill="none" stroke="#d32f2f" stroke-width="40"/>
+<path d="M60 860 C60 960 2900 960 2950 700 L3050 700" fill="none" stroke="#212121" stroke-width="40"/>
+<rect id="connector0pin" x="3032" y="182" width="36" height="36" fill="#c9a94a"/>
+<rect id="connector1pin" x="3032" y="682" width="36" height="36" fill="#c9a94a"/>
+</g>
+</svg>

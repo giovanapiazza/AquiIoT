@@ -349,7 +349,7 @@ arduino-cli compile --fqbn esp32:esp32:esp32 -u -p /dev/ttyACM0 esp32_setor
               "Histórico de eventos apenas em RAM (12 posições).",
           ]),
           ]
-    gerar(RAIZ / "esp32_setor" / "docs" / "esp32_setor.pdf", "ESP32 do Setor", h)
+    gerar(RAIZ / "esp32" / "esp32_setor" / "docs" / "esp32_setor.pdf", "ESP32 do Setor", h)
 
 
 # ======================================================================
@@ -451,7 +451,7 @@ arduino-cli compile --fqbn esp8266:esp8266:generic -u -p /dev/ttyUSB0 esp8266_ch
               "O rótulo “IPTESTE” na mensagem de conexão é apenas texto de depuração.",
           ]),
           ]
-    gerar(RAIZ / "esp8266_chaveiro" / "docs" / "esp8266_chaveiro.pdf", "Chaveiro ESP8266", h)
+    gerar(RAIZ / "esp8266" / "esp8266_chaveiro" / "docs" / "esp8266_chaveiro.pdf", "Chaveiro ESP8266", h)
 
 
 # ======================================================================
@@ -477,8 +477,8 @@ Chaveiro 03 -> Sala 02
 
           P("2. Componentes", "h1"),
           tabela(["Componente", "Hardware", "Papel no sistema", "Código"], [
-              ["Chaveiro", "ESP8266 (ESP-01S)", "Elemento móvel. Conecta no Wi-Fi do setor e avisa a presença a cada 5 s com o RSSI.", "esp8266_chaveiro/"],
-              ["Setor", "ESP32 + LDR, microfone, DHT11, buzzer", "Ponto fixo. Cria o Wi-Fi local, registra chaveiros, lê sensores e envia ao backend.", "esp32_setor/"],
+              ["Chaveiro", "ESP8266 (ESP-01S)", "Elemento móvel. Conecta no Wi-Fi do setor e avisa a presença a cada 5 s com o RSSI.", "esp8266/esp8266_chaveiro/"],
+              ["Setor", "ESP32 + LDR, microfone, DHT11, buzzer", "Ponto fixo. Cria o Wi-Fi local, registra chaveiros, lê sensores e envia ao backend.", "esp32/esp32_setor/"],
               ["Unidade central", "Raspberry Pi", "Backend Node/Express (API + banco) e front-end React (Vite). Publicada na internet via Tailscale Funnel.", "branch feat/arquitetura-web"],
               ["Painel", "Navegador", "Mostra localização, sensores, estado de conexão, histórico e alertas.", "front-end React"],
           ], [2.6, 3.6, 7.0, 3.8]),
@@ -523,7 +523,7 @@ Chaveiro 03 -> Sala 02
               "<b>Buzzer</b>: chave separada no cabeçalho X-API-Key e limite de 1 bip por segundo.",
               "<b>Setor → backend</b>: HTTPS pelo Tailscale Funnel; o certificado ainda não é verificado no ESP32.",
               "<b>Segredos</b>: dados do Wi-Fi com internet e URL do backend ficam em "
-              "<font face='Mono'>esp32_setor/segredos.h</font>, fora do Git.",
+              "<font face='Mono'>esp32/esp32_setor/segredos.h</font>, fora do Git.",
           ]),
 
           P("7. Organização do repositório", "h1"),
@@ -533,21 +533,27 @@ AquiIoT/
 ├── docs/
 │   ├── AquiIoT_visao_geral.pdf   este documento
 │   └── fontes/                   gerador dos PDFs e fluxogramas (Graphviz)
-├── esp32_setor/                  firmware do ponto fixo (ESP32)
-│   ├── esp32_setor.ino
-│   ├── segredos.exemplo.h        modelo -> copiar para segredos.h
-│   ├── segredos.h                (local, ignorado pelo Git)
-│   └── docs/esp32_setor.pdf
-└── esp8266_chaveiro/             firmware do chaveiro (ESP8266)
-    ├── esp8266_chaveiro.ino
-    └── docs/esp8266_chaveiro.pdf
+├── esp32/
+│   └── esp32_setor/              firmware do ponto fixo (ESP32)
+│       ├── esp32_setor.ino
+│       ├── segredos.exemplo.h    modelo -> copiar para segredos.h
+│       ├── segredos.h            (local, ignorado pelo Git)
+│       └── docs/esp32_setor.pdf
+├── esp8266/
+│   └── esp8266_chaveiro/         firmware do chaveiro (ESP8266)
+│       ├── esp8266_chaveiro.ino
+│       └── docs/esp8266_chaveiro.pdf
+└── servidor/                     Raspberry Pi
+    ├── banco/                    SQLite e migrações
+    ├── servidor/                 API (Express)
+    └── front/                    interface (React)
 '''),
 
           P("8. Como colocar o sistema para funcionar", "h1"),
           *itens([
               "<b>1.</b> Na Raspberry Pi, iniciar o backend (porta 3000) e o front-end (porta 5173) e conferir "
               "<font face='Mono'>tailscale funnel status</font>.",
-              "<b>2.</b> Preencher <font face='Mono'>esp32_setor/segredos.h</font> e gravar o ESP32 do setor.",
+              "<b>2.</b> Preencher <font face='Mono'>esp32/esp32_setor/segredos.h</font> e gravar o ESP32 do setor.",
               "<b>3.</b> Gravar cada chaveiro com um <font face='Mono'>ID_CHAVEIRO</font> diferente e a mesma "
               "rede/chave do setor.",
               "<b>4.</b> No Monitor Serial do ESP32 (115200), conferir “Setor pronto no backend” e "
@@ -569,8 +575,8 @@ AquiIoT/
           P("Apêndice — documentação de cada placa", "h1"),
           P("Os detalhes de cada firmware (fluxogramas internos, rotas, temporizações, mensagens e gravação) estão em:"),
           *itens([
-              "<font face='Mono'>esp32_setor/docs/esp32_setor.pdf</font>",
-              "<font face='Mono'>esp8266_chaveiro/docs/esp8266_chaveiro.pdf</font>",
+              "<font face='Mono'>esp32/esp32_setor/docs/esp32_setor.pdf</font>",
+              "<font face='Mono'>esp8266/esp8266_chaveiro/docs/esp8266_chaveiro.pdf</font>",
           ]),
           ]
     gerar(RAIZ / "docs" / "AquiIoT_visao_geral.pdf", "Visão Geral", h)
